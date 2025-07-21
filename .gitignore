@@ -1,0 +1,11 @@
+# Emacs artifacts
+*~
+*.elc
+# Doom Emacs specific
+.local/
+.cask/
+# LifeOS user data and cache (for safety)
+journal/
+.system/
+# OS-specific files
+.DS_Store
