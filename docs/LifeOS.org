@@ -1,0 +1,605 @@
+* *Section 1: Core Philosophy and Design Principles*
+:PROPERTIES:
+:CUSTOM_ID: section-1-core-philosophy-and-design-principles
+:END:
+This document provides the complete architectural and operational
+blueprint for the LifeOS system, version 7.0. It is designed for a
+successor agent to achieve total system understanding.
+
+The fundamental objective of LifeOS is to transform the user's personal
+information management from a passive, archival activity into an
+*active, intelligent, and conversational partnership*. It is not a tool;
+it is an environment. It elevates a collection of text files into a
+self-organizing, AI-augmented extension of the user's mind, governed by
+the following core principles:
+
+1. *Frictionless, Ubiquitous Capture:* The cost of capturing any
+   thought, task, or piece of data must be near zero. This is the
+   foundation upon which all other intelligence is built.
+2. *Scheduled Synthesis and Review:* Data has no value without
+   processing. The system must enforce a disciplined, scheduled rhythm
+   of review and synthesis, transforming raw data into structured
+   knowledge and actionable plans.
+3. *AI as Chief of Staff:* The AI's role is not that of a conversational
+   assistant but a hyper-efficient Chief of Staff. It performs complex,
+   data-heavy synthesis non-interactively to produce high-signal,
+   zero-chatter briefings and recommendations for the user (the
+   "Architect" or "Commander") to act upon.
+4. *A Session-Based Environment:* The user's work is not a continuous
+   stream but a series of focused sessions. The system's architecture
+   reflects this, creating discrete, data-rich containers
+   (=Session-XXX.org=) for every work period, which serve as the primary
+   ground truth for daily and weekly reviews.
+
+
+* *Section 2: System Architecture Overview*
+:PROPERTIES:
+:CUSTOM_ID: section-2-system-architecture-overview
+:END:
+The LifeOS is composed of five distinct but deeply interconnected
+layers, forming a complete data processing pipeline.
+
+1. *The Automation Layer (External Triggers):* This layer exists outside
+   of Emacs and is responsible for triggering non-interactive system
+   functions. As per Dossier #1 of the System Codex, this is handled by
+   =systemd= user timers, which call =emacsclient= to execute specific
+   backend functions on a schedule. This is the "pacemaker" of the
+   system.
+2. *The Logic Layer (The Backend: =lifeos.el=):* This is the core
+   engine, written in Emacs Lisp. It contains all non-interactive helper
+   functions for path generation, context gathering, data processing, AI
+   communication, and file I/O. It has no knowledge of user interfaces
+   or keybindings.
+3. *The AI Layer (The "Mind": =~/journal/.prompts/=):* This is a library
+   of master prompt files. Each file defines a specific AI persona, its
+   directive, and its precise input/output format. This library
+   externalizes the AI's logic from the Lisp code, allowing for rapid
+   iteration and a clear separation of concerns.
+4. *The Data Layer (The "World": =~/journal/=):* This is the user's
+   collection of Org-mode files. These files are not merely a database;
+   they are the structured "world" upon which the system operates. The
+   system reads from and writes to this layer, making it the central
+   repository of both raw input and synthesized output.
+5. *The Interface Layer (The Frontend: =config.el=):* This is the
+   exclusive domain of user interaction. It is responsible for defining
+   keybindings (=map!=), configuring package behavior (=use-package!=),
+   and creating interactive command interfaces (e.g., =defhydra=). It
+   connects the user's keystrokes to the functions in the Logic Layer.
+
+
+* *Section 3: The File Ecosystem*
+:PROPERTIES:
+:CUSTOM_ID: section-3-the-file-ecosystem
+:END:
+A total understanding of the system requires a total understanding of
+the files it reads, writes, and depends on.
+
+** *A. Configuration & Logic Files (System's Source of Truth)*
+:PROPERTIES:
+:CUSTOM_ID: a.-configuration-logic-files-systems-source-of-truth
+:END:
+- *=~/.doom.d/lisp/lifeos.el=*: *The Backend.* This is the largest and
+  most critical file, containing all the core Lisp functions. It defines
+  the system's /capabilities/.
+- *=~/.doom.d/config.el=*: *The Frontend.* This file defines the user
+  interface. It configures packages and binds keys, making the functions
+  in =lifeos.el= accessible. It defines the system's /usability/.
+- *=~/journal/.prompts/=*: *The AI Logic Core.* This directory contains
+  all master AI prompt files. The system is entirely dependent on these
+  files for all AI-driven functionality. They are:
+  - =1A_Annual_Q.org=: Generates the Annual Vision Questionnaire.
+  - =1B_Annual_Synth.org=: Synthesizes user answers and numerology into
+    the Annual Codex.
+  - =2A_Monthly_Q.org=: Generates the Monthly Debrief Questionnaire
+    based on past performance.
+  - =2B_Monthly_Synth.org=: Synthesizes the debrief into the next
+    month's Tactical Directive.
+  - =3A_IntraMonth_Q.org=: Generates the mid-cycle Tactical Debrief
+    Questionnaire.
+  - =3B_IntraMonth_Synth.org=: Generates the mid-cycle Tactical
+    Readjustment.
+  - =4A_Bridge_Q.org=: Generates the transitional Ebb & Flow
+    Questionnaire between months.
+  - =4B_Bridge_Synth.org=: Generates the Transitional Tactical Outlook.
+  - =5_Daily_Gen.org=: The Chief of Staff prompt that generates the
+    Daily Command Center.
+  - =6_DCC_Pointer_Gen.org=: A specialized distiller for creating
+    natural-language task pointers (a future enhancement target).
+  - =7_Strategic_Scheduler.org=: The AI Chief of Staff prompt for
+    generating task scheduling options.
+
+** *B. Core Data Files (User-Managed Inputs)*
+:PROPERTIES:
+:CUSTOM_ID: b.-core-data-files-user-managed-inputs
+:END:
+These files are the primary data sources the user creates and on which
+the system's intelligence depends.
+
+- *=~/journal/inbox.org=*: The central capture location for tasks
+  generated by the Capture Gears. It serves as the primary input for
+  triage and the source of tasks for the "Global Task Horizon."
+- *=~/journal/templates/habits.org=*: A simple Org file containing
+  master headlines for daily habits. It is read once at the start of
+  every new session by =life-os-begin-new-session=.
+  - /Example =habits.org= content:/
+    =org     * TODO Review Anki/Drill Cards :Habit:daily:     * TODO 30 minutes of cardio :Habit:daily:=
+- *All =*.org= files in =~/journal/=*: This collection, defined by
+  =org-agenda-files= in =config.el=, forms the global database for all
+  queries, including =org-ql= searches for =SCHEDULE-ME= tasks and
+  agenda generation for the AI scheduler.
+
+** *C. System-Generated Files (System Outputs)*
+:PROPERTIES:
+:CUSTOM_ID: c.-system-generated-files-system-outputs
+:END:
+These are the canonical output artifacts created by the various LifeOS
+workflows.
+
+- *Worksheets (in =~/journal/worksheets/=):* These are AI-generated
+  questionnaires for the user to fill out. The system depends on the
+  user completing these to proceed to the Synthesis (Phase B) part of
+  any review cycle.
+- *Outlooks/Directives (in =~/journal/outlooks/=):* These are the final,
+  synthesized strategic documents (Annual Codex, Monthly Directives,
+  Tactical Outlooks). The system is critically dependent on these files,
+  as they are recursively used as input for subsequent, lower-level
+  reviews (e.g., the Annual Codex is an input for Monthly reviews and
+  the DCC).
+- *Session Logs (in =~/journal/logs/sessions/=):* e.g.,
+  =Session-042.org=. These are the most critical operational logs. Each
+  file contains a complete record of a single work session. The user is
+  dependent on this as their primary workspace. The system is critically
+  dependent on the /most recent/ log as the primary data source for
+  generating the next day's DCC.
+- *Daily Command Center (DCC) (in =~/journal/logs/YYYY/MM/=):* e.g.,
+  =2025-07-25.org=. The AI-generated daily briefing. The user is
+  dependent on this as their starting point for any new session.
+
+** *D. Internal State & Cache Files (System-Managed)*
+:PROPERTIES:
+:CUSTOM_ID: d.-internal-state-cache-files-system-managed
+:END:
+- *=~/journal/.system/session.org=*: A single plain text file containing
+  one integer: the current session count. The
+  =life-os-begin-new-session= function reads and overwrites this file.
+- *=~/journal/.system/parents.org=*: A cache file containing the titles
+  and IDs of all =:Epic:= tasks in =inbox.org=. It is generated by
+  =life-os-update-parent-cache= and read by
+  =life-os-interactive-capture= to reduce friction when parenting tasks.
+
+
+* *Section 4: Functional Decomposition of =lifeos.el=*
+:PROPERTIES:
+:CUSTOM_ID: section-4-functional-decomposition-of-lifeos.el
+:END:
+This section provides a complete, function-by-function analysis of the
+backend logic layer. Each function group represents a distinct system
+capability.
+
+** *A. Group 1: Foundational Utilities (API & Data Processing)*
+:PROPERTIES:
+:CUSTOM_ID: a.-group-1-foundational-utilities-api-data-processing
+:END:
+These are the most fundamental building blocks, providing core I/O and
+communication capabilities.
+
+- =life-os-call-ai=: The sole point of contact with the external Gemini
+  API.
+  - *Inputs:* =prompt-text= (string), =provider= (optional symbol, 'pro
+    or 'flash).
+  - *Process:* Constructs the API URL and JSON payload, retrieves the
+    API key via =auth-source=, sends the request via =plz=, and returns
+    the raw parsed JSON. It messages the user to indicate that a request
+    is in progress.
+  - *Dependencies:* =plz=, =json=, =auth-source=.
+  - *Outputs:* A raw, parsed JSON =alist= representing the AI's full
+    response.
+- =life-os-extract-text-from-ai-response=: A simple data extractor.
+  - *Inputs:* =ai-response-data= (the =alist= from =life-os-call-ai=).
+  - *Process:* Traverses the nested =alist= structure (=candidates= ->
+    =content= -> =parts= -> =text=).
+  - *Outputs:* A single string of the generated text, or an empty string
+    if no text is found.
+- =life-os-read-prompt=: The canonical function for loading AI prompt
+  templates.
+  - *Inputs:* =prompt-full-path= (string).
+  - *Process:* Checks for file existence and reads the entire file
+    content into a string.
+  - *Outputs:* The full string content of the specified prompt file.
+
+** *B. Group 2: Path Generation Helpers*
+:PROPERTIES:
+:CUSTOM_ID: b.-group-2-path-generation-helpers
+:END:
+This group of functions ensures that all files are written to and read
+from a single, canonical location. They enforce the system's directory
+structure.
+
+- =life-os--generate-annual-worksheet-path=, =...-annual-outlook-path=,
+  =...-monthly-worksheet-path=, =...-monthly-outlook-path=, etc.
+  - *Purpose:* To programmatically construct the absolute file path for
+    a specific review cycle artifact.
+  - *Inputs:* Typically =year-string= and =month-string=, or a
+    =date-range= =alist=.
+  - *Process:* Each function uses =expand-file-name= and =format= to
+    build a predictable, structured path (e.g.,
+    =~/journal/outlooks/YYYY/MM/YYYY-MM-Directive.org=).
+  - *Outputs:* A single, absolute file path string.
+- =life-os--generate-dcc-path=: Constructs the path for the Daily
+  Command Center.
+  - *Inputs:* =date= (optional time object).
+  - *Process:* Uses the current time if no date is provided, formatting
+    it into the =~/journal/logs/YYYY/MM/YYYY-MM-DD.org= structure.
+  - *Outputs:* A single, absolute file path string.
+
+** *C. Group 3: Numerology and Dynamic Data Helpers*
+:PROPERTIES:
+:CUSTOM_ID: c.-group-3-numerology-and-dynamic-data-helpers
+:END:
+This group is responsible for all time-based calculations and dynamic
+context generation.
+
+- *The Core Numerology Engine (=life-os--reduce-number=,
+  =...-calculate-personal-year=, =...-month=, =...-day=):* These are
+  pure functions that implement the numerological calculations.
+- =life-os-calculate-numerology-for-date=: The main entry point for the
+  numerology engine.
+  - *Inputs:* =target-date-string= ("YYYY-MM-DD").
+  - *Process:* orchestrates calls to the helper functions to calculate
+    PY, PM, and PD, and combines them with the hard-coded Life Path and
+    Annual Essence.
+  - *Outputs:* An =alist= of all numerological data for the given date.
+    e.g., ='((life-path . 5) (personal-year . 7) ...)=
+- *Date Range and Sequence Helpers
+  (=life-os--get-previous-month-date-range=,
+  =life-os--get-bridge-cycle-date-range=,
+  =life-os--find-next-pd-with-num=):* These are specialized date logic
+  functions used by the Review Cycle Engine and Scheduler to define the
+  scope of operations.
+
+** *D. Group 4: Context-Gathering Helpers*
+:PROPERTIES:
+:CUSTOM_ID: d.-group-4-context-gathering-helpers
+:END:
+This crucial group is responsible for reading the Data Layer and
+assembling the context required by the AI Layer.
+
+- =life-os--get-annual-codex-content=,
+  =life-os--get-monthly-directive-content=,
+  =life-os--get-cycle-outlook-content=: Each of these functions takes a
+  date-string as input, uses the Path Generation helpers to find the
+  relevant outlook file, and returns its full content as a string. They
+  include warning messages if a file is not found.
+- =life-os--get-dcc-history=: Takes a start and end date string. It
+  iterates through each day in the range, constructs the path to that
+  day's DCC, and concatenates the content of all found DCCs into a
+  single large string.
+- =life-os--get-global-task-horizon=: Uses =org-ql= to find all
+  headlines in =org-agenda-files= that do not have a =DONE= state and
+  formats them into a single string for AI consumption.
+- =life-os--get-latest-session-log=: Finds and returns the path to the
+  highest-numbered session log, which is the primary source of
+  "yesterday's data" for the DCC generation.
+- =life-os--assemble-strategic-scheduling-context=: This is a
+  "meta-gatherer." It accepts a task marker and calls multiple other
+  context-gathering helpers (=get-annual-codex=,
+  =get-monthly-directive=, etc.) to build the complete, composite
+  context block required by the =7_Strategic_Scheduler.org= prompt.
+
+** *E. Group 5: The Review Cycle Engine*
+:PROPERTIES:
+:CUSTOM_ID: e.-group-5-the-review-cycle-engine
+:END:
+This is the system's "operating system," responsible for orchestrating
+the multi-phase review and synthesis cycles.
+
+- =life-os-run-review-cycle=: The main entry point for any review.
+  - *Inputs:* A configuration =plist= (e.g.,
+    =life-os-config--bridge-review=).
+  - *Process:*
+    1. Reads the =:date-logic= function from the config and calls it to
+       determine the correct date range for the review.
+    2. Initiates Phase A of the review by calling
+       =life-os--execute-review-phase=.
+  - *Dependencies:* Critically depends on the =life-os-config--...=
+    plists which define the prompts and context-gatherers for each
+    review type.
+- =life-os--execute-review-phase=: The workhorse for all reviews.
+  - *Inputs:* A =phase-config= plist, the top-level =config=, the
+    =date-range=, extra context (like user answers from Phase A), and
+    the minor mode to activate.
+  - *Process:*
+    1. Loads the appropriate prompt file specified in the
+       =phase-config=.
+    2. Iterates through the =:context-gatherers= defined in the config.
+       For each one, it calls the specified =:source-fn= and injects the
+       resulting data string into the prompt's placeholder. This is the
+       core data-injection loop.
+    3. Calls =life-os-call-ai= with the final, populated prompt.
+    4. Displays the extracted text in a special =*LifeOS Review*=
+       buffer.
+    5. Attaches the current configuration and date range to buffer-local
+       variables.
+    6. Activates the appropriate minor mode (=life-os-phase-a-mode= or
+       =life-os-phase-b-mode=).
+- =life-os-save-and-proceed-correction-buffer= &
+  =life-os-save-final-outlook-buffer=: Interactive commands bound to
+  =C-c C-c= in the special review buffers. They read the buffer-local
+  state variables, use the Path Generation helpers to determine the
+  correct output file, save the buffer's content, and either proceed to
+  Phase B or terminate the review cycle.
+
+** *F. Group 6: Capture Gears (User Input)*
+:PROPERTIES:
+:CUSTOM_ID: f.-group-6-capture-gears-user-input
+:END:
+This group of functions provides the user with different "gears" for
+capturing information with varying levels of friction and detail. The
+common principle is that they all create a task in a central location
+(=inbox.org=) and then append a pointer to the active log file using
+=life-os--append-to-active-log-inbox=.
+
+- =life-os--quick-capture-action=: *(2nd Gear)* The backend for the
+  high-velocity =hydra= capture system.
+  - *Inputs:* =state= (e.g., "TODO"), =priority= (e.g., "A"). These are
+    provided by the =hydra= frontend.
+  - *Process:*
+    1. Interactively prompts the user for just the headline text.
+    2. Constructs a full Org-mode entry string, including a new =:ID:=,
+       =:CREATED:= timestamp, and the provided =state= and =priority=.
+    3. Appends this full entry to =~/journal/inbox.org= via
+       =life-os--append-to-file-robust=.
+    4. Constructs a compact pointer string
+       (=- STATE [#P] Headline [[id:...]]=).
+    5. Appends the pointer to the active log via
+       =life-os--append-to-active-log-inbox=.
+  - *Key Design:* Optimized for speed; gathers minimal information and
+    performs no scheduling.
+- =life-os-interactive-capture=: *(3rd Gear)* A comprehensive wizard for
+  deeply-contextualized capture.
+  - *Inputs:* None (it is fully interactive).
+  - *Process:*
+    1. Interactively prompts the user for: headline, state, priority,
+       tags, properties, and an optional parent Epic.
+    2. To facilitate parenting, it calls =life-os-update-parent-cache=
+       to ensure the list of potential Epics is current.
+    3. Constructs a full Org-mode entry in the same manner as quick
+       capture, but includes all the additional metadata (=:PARENT:=,
+       user-defined properties, etc.) in the =:PROPERTIES:= drawer.
+    4. Performs the same append-and-point logic as quick capture.
+  - *Key Design:* Optimized for detail; used when a task requires
+    significant context at the moment of capture.
+- =life-os-promote-note-to-task=: *(Escalation Path)* Converts
+  unstructured text into a structured task.
+  - *Inputs:* None (operates on the line at point).
+  - *Process:*
+    1. Extracts the clean text content from the current line.
+    2. Temporarily redefines the =read-string= function to use this
+       extracted text as the /initial input/ for the "Main Item" prompt.
+    3. Calls =life-os-interactive-capture=. The user experiences the
+       full capture wizard, but with the main headline already
+       pre-filled.
+    4. After the capture wizard successfully completes, it deletes the
+       original plain text line from the source buffer.
+  - *Key Design:* Provides a seamless escalation path from fleeting
+    notes to formal tasks without copy-pasting.
+
+** *G. Group 7: The Scheduling Suite (Manual & AI-Assisted)*
+:PROPERTIES:
+:CUSTOM_ID: g.-group-7-the-scheduling-suite-manual-ai-assisted
+:END:
+This suite provides the mechanisms for applying =SCHEDULED= and
+=DEADLINE= timestamps to existing tasks.
+
+- *The Dynamic Org Capture Scheduler (=life-os-launch-scheduler=,
+  =...--scheduler-capture-template=,
+  =...--scheduler-finalize-selection=):* This is the manual, UI-driven
+  scheduling component.
+  - =life-os-launch-scheduler=: The entry point. It programmatically
+    creates a temporary =org-capture= template and invokes a blocking
+    capture session. Upon completion, it returns the user's selected
+    date =alist=.
+  - =life-os--scheduler-capture-template=: The UI renderer. It is called
+    /by/ =org-capture= to generate the buffer's content. It calls
+    helpers like =life-os--scheduler-get-heuristic-dates= and
+    =...-numerology-dates= to get data, formats each as a selectable
+    line, and uses =propertize= to attach the full data =alist= to its
+    corresponding line.
+  - =life-os--scheduler-finalize-selection=: The "commit" button
+    (=C-c C-c=). It reads the =alist= from the current line's text
+    properties and saves it before finalizing the capture session.
+- *The AI Strategic Scheduler (=life-os-plan-my-schedule=,
+  =...--parse-ai-scheduling-options=, =...--commit-ai-schedule=):* This
+  is the AI-driven planning component.
+  - =life-os-plan-my-schedule=: The orchestrator. It calls
+    =life-os--get-tasks-to-schedule= to find tasks,
+    =life-os--assemble-strategic-scheduling-context= to build the prompt
+    context, calls the AI via prompt =7=, parses the response with
+    =life-os--parse-ai-scheduling-options=, and then renders the
+    interactive =*LifeOS Action Review*= buffer.
+  - =life-os--parse-ai-scheduling-options=: A dedicated parser for the
+    AI's specific Org-mode list output format.
+  - =life-os--commit-ai-schedule=: The "commit" button. It reads the
+    selected option, jumps to the source task, changes its state to
+    =AI-REC=, and applies the timestamp. It is also the trigger point
+    for the *Action Engine*.
+- *The Action Engine (=life-os--create-confirmation-child-task=,
+  =life-os--update-parent-on-confirmation=):* The hierarchical
+  automation component.
+  - =life-os--commit-ai-schedule= (enhancement): After committing a
+    schedule for an =APPT= task, it now inspects its properties and
+    calls =life-os--create-confirmation-child-task=.
+  - =life-os--create-confirmation-child-task=: Constructs and files a
+    high-priority =NEXT= task with a deadline and a =:PARENT:= ID link
+    back to the appointment.
+  - =life-os--update-parent-on-confirmation=: An
+    =org-after-todo-state-change-hook=. It runs on /every/ state change.
+    It checks if a task is being marked =DONE= and if that task has a
+    =:PARENT:= property. If so, it finds the parent and updates its
+    =:Confirmed_External:= status, closing the feedback loop.
+
+** *H. Group 8: The Session-Based Architecture*
+:PROPERTIES:
+:CUSTOM_ID: h.-group-8-the-session-based-architecture
+:END:
+This suite manages the lifecycle of the user's core work environment.
+
+- *State Management (=life-os--get-session-counter=,
+  =...--increment-and-get-session-counter=):* Simple file I/O functions
+  that read and write the integer value in
+  =~/journal/.system/session.org=.
+- =life-os-begin-new-session=: The "start of day" command.
+  - Increments the session counter.
+  - Creates a new =Session-XXX.org= file from a hard-coded template.
+    This template /must/ include the =* Metrics Checklist= and
+    =* Inbox / Fleeting Notes= headings.
+  - Calls =life-os--inject-habit-templates= to query =habits.org= and
+    inject daily habit checklists into the =* Metrics Checklist=
+    section.
+  - Opens the new file for the user.
+- =life-os-end-session-review=: The "end of day" command.
+  - Uses =life-os--get-active-log-file= to identify the correct session
+    log to finalize.
+  - Interactively prompts the user for post-session metrics.
+  - Opens the session log in the background and writes these metrics to
+    the =:PROPERTIES:= drawer using =org-entry-put=.
+- =life-os--get-active-log-file=: A critical pointer function used
+  throughout the system. It finds the highest-numbered session log and
+  returns its path. It contains a fallback to return the path to today's
+  DCC if no session is active, ensuring capture functionality is never
+  broken.
+
+
+* *Section 5: The Grand Workflow (A Day in the LifeOS)*
+:PROPERTIES:
+:CUSTOM_ID: section-5-the-grand-workflow-a-day-in-the-lifeos
+:END:
+This section details the complete, end-to-end operational workflow of
+the LifeOS system, integrating all layers and components into a cohesive
+daily cycle. This narrative demonstrates how the system's design
+principles are realized through its implemented functions.
+
+** *Phase 0: Pre-Session (Automated Nightly Operations)*
+:PROPERTIES:
+:CUSTOM_ID: phase-0-pre-session-automated-nightly-operations
+:END:
+- *Timestamp:* =~04:00=
+- *Trigger:* An external =systemd= user timer (=intel-briefing.timer=
+  from the System Codex) executes a command:
+  =emacsclient --eval '(life-os-generate-daily-plan)'=.
+- *System Actions:*
+  1. The =life-os-generate-daily-plan= function in =lifeos.el= is
+     invoked non-interactively.
+  2. The function determines the path of the most recently completed
+     session log, =Session-041.org=, using
+     =life-os--get-latest-session-log=. It reads the entire file
+     content, including the user's closing thoughts and the finalized
+     =:PROPERTIES:= drawer.
+  3. It gathers all other required contexts: the Annual Codex, Monthly
+     Directive, the current global task list (from
+     =life-os--get-global-task-horizon=), and today's numerology.
+  4. This massive context string is injected into the master prompt from
+     =5_Daily_Gen.org=.
+  5. =life-os-call-ai= sends the request to the Gemini API.
+  6. The AI response---the full Org-mode text of a new Daily Command
+     Center---is received.
+  7. The system writes this text to the canonical path for today, e.g.,
+     =~/journal/logs/2025/07/2025-07-25.org=.
+- *User Experience:* The user is asleep. The system prepares the field
+  for the next day's campaign without any human intervention.
+
+** *Phase 1: Session Initialization (The Morning Ritual)*
+:PROPERTIES:
+:CUSTOM_ID: phase-1-session-initialization-the-morning-ritual
+:END:
+- *Timestamp:* =~07:00=
+- *Trigger:* The user executes the =SPC j b= keybinding.
+- *System Actions:*
+  1. =life-os-begin-new-session= is called.
+  2. =life-os--increment-and-get-session-counter= reads
+     =~/.system/session.org=, increments the number from =41= to =42=,
+     and writes it back.
+  3. A new file, =~/journal/logs/sessions/Session-042.org=, is created
+     with the standard template, including headings like
+     =* Metrics Checklist= and =* Inbox / Fleeting Notes=.
+  4. =life-os--inject-habit-templates= is called. It opens
+     =~/journal/templates/habits.org=, queries for all headlines with
+     the =:Habit:daily:= tag, and appends them as =* TODO= items under
+     the =* Metrics Checklist= heading in =Session-042.org=.
+  5. The system opens =Session-042.org= for the user.
+- *User Experience:* The user begins their day by reviewing the
+  AI-generated DCC from Phase 0 to understand their strategic context.
+  They then press =SPC j b=, and their personal, templated workspace for
+  the day appears, pre-populated with their required habit checks.
+
+** *Phase 2: Operational Flow (Capture and Action)*
+:PROPERTIES:
+:CUSTOM_ID: phase-2-operational-flow-capture-and-action
+:END:
+- *Timestamp:* =Throughout the day=
+- *Workflow A: Low-Friction Task Capture*
+  - *Trigger:* An urgent but simple task arises. The user executes the
+    =hydra= via =SPC j t=.
+  - *System Actions:* =life-os--quick-capture-action= prompts for a
+    headline. The task is created with a new ID in =inbox.org=.
+    =life-os--append-to-active-log-inbox= is called, which gets the path
+    to =Session-042.org= (via =life-os--get-active-log-file=) and
+    appends a pointer to the new task under the
+    =* Inbox / Fleeting Notes= heading.
+  - *User Experience:* The thought is captured and contextualized to the
+    current session in under 5 seconds with zero change in focus.
+- *Workflow B: Deep Context Capture & Scheduling*
+  - *Trigger:* A new, complex appointment is scheduled. It needs
+    metadata and a confirmation. The user captures it via
+    =life-os-interactive-capture= (=SPC j c=), marking it as an =APPT=,
+    giving it a =:Confirm_With: "client@example.com"=, and changing its
+    state to =SCHEDULE-ME=.
+  - *System Actions & User Experience:*
+    1. Later, during a planning block, the user runs the AI Planner with
+       =SPC j P= (=life-os-plan-my-schedule=).
+    2. The system finds the =SCHEDULE-ME= appointment and assembles the
+       strategic context.
+    3. The user is presented with the =*LifeOS Action Review*= buffer
+       containing AI-generated scheduling options. They select the best
+       one and press =C-c C-c=.
+    4. =life-os--commit-ai-schedule= runs. The appointment in
+       =inbox.org= is timestamped and its state changes to =AI-REC=. A
+       default property =:Confirmed_External: no= is added.
+    5. Because the original task was an =APPT= and has the
+       =:Confirm_With:= property, the *Action Engine* triggers.
+       =life-os--create-confirmation-child-task= creates a
+       =* NEXT [#A] Confirm Appt: ...= task in =inbox.org= with a
+       deadline 2 days prior to the appointment and a =:PARENT:= ID
+       link. A pointer to this new confirmation task is appended to
+       =Session-042.org=.
+
+** *Phase 3: Session Finalization (The Evening Review)*
+:PROPERTIES:
+:CUSTOM_ID: phase-3-session-finalization-the-evening-review
+:END:
+- *Timestamp:* =~17:00=
+- *Trigger:* The user ends their workday by executing =SPC j e=.
+- *System Actions:*
+  1. =life-os-end-session-review= is called. It prompts the user for
+     final metrics (focus, energy, hours, etc.).
+  2. The function opens =Session-042.org= in the background and writes
+     these metrics into its =:PROPERTIES:= drawer.
+- *User Experience:* The user adds their subjective summary of the day
+  to the =* Closing Thoughts= section and saves the file. The
+  operational log is now a complete, data-rich record of the day's
+  campaign, ready to serve as the primary input for tomorrow's AI
+  briefing. The cycle is complete.
+
+
+* *Section 6: Conclusion*
+:PROPERTIES:
+:CUSTOM_ID: section-6-conclusion
+:END:
+The LifeOS is a closed-loop system. The output of one cycle (a completed
+session log) becomes the primary input for the next cycle's automated
+planning phase. The user's role shifts from a manual manager of lists to
+a strategic commander who consumes AI-synthesized intelligence, acts
+within a purpose-built environment, and produces data-rich artifacts
+that fuel the next iteration of the loop. This blueprint provides the
+complete specification for the architecture and operation of this
+system.
