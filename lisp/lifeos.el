@@ -232,7 +232,13 @@ convention."
       (progn
         (message "LifeOS Context Warning: No recent tactical outlook found.")
         ""))))
-
+(defun life-os--get-intra-month-cycle-date-range (target-date-obj)
+  "Calculate the 9-day intra-month cycle ending on the last PD9 before TARGET-DATE-OBJ.
+Returns an alist with :start-date-str and :end-date-str."
+  (let* ((end-date-obj (life-os--find-last-pd-cycle-end 9))
+         (start-date-obj (time-subtract end-date-obj (days-to-time 8))))
+    `((:start-date-str . ,(format-time-string "%Y-%m-%d" start-date-obj))
+      (:end-date-str . ,(format-time-string "%Y-%m-%d" end-date-obj)))))
 (defun life-os--get-dcc-history (start-date-string end-date-string)
   "Return the concatenated content of all DCC files within a date range."
   (let ((history-content ""))
@@ -499,7 +505,7 @@ Currently a placeholder for a more complex agenda query."
 ;; --- Configuration Profiles (v2 - Phase-Separated & Fully Defined) ---
 (defconst life-os-config--intra-month-review
   '(:name "Intra-Month Tactical Review"
-    :date-logic :intra-month-cycle
+    :date-logic #'life-os--get-intra-month-cycle-date-range
     :phase-a (:prompt "3A_IntraMonth_Q.org"
               :context-gatherers ((:placeholder "[CURRENT_MONTHLY_DIRECTIVE_CONTENT]" :source-fn life-os--get-monthly-directive-content)
                                   (:placeholder "[CYCLE_DCC_HISTORY]" :source-fn life-os--get-dcc-history))
@@ -621,18 +627,24 @@ displays result."
         (erase-buffer) (insert ai-text) (goto-char (point-min))
         (setq-local life-os--correction-buffer-data `((config . ,top-level-config) (date-range . ,date-range)))
         (funcall current-mode-fn 1) (message "Correction buffer ready. Press C-c C-c to commit.")))))
-(defun life-os-run-review-cycle (config)
-  "Main entry point to run a full review cycle. Calculates date range and
-initiates Phase A."
+(defun life-os-run-review-cycle (config &optional start-date-str end-date-str)
+  "Main entry point to run a full review cycle.
+Calculates date range automatically if START-DATE-STR and END-DATE-STR
+are not provided."
   (message "BEGINNING REVIEW CYCLE: %s" (plist-get config :name))
-  (let* ((date-logic-fn (plist-get config :date-logic))
-         (date-range (funcall date-logic-fn (current-time))))
+  (let* ((date-range
+          (if (and start-date-str end-date-str)
+              ;; If dates are provided, use them to build the alist
+              `((:start-date-str . ,start-date-str) (:end-date-str . ,end-date-str))
+            ;; Otherwise, calculate them dynamically
+            (let ((date-logic-fn (plist-get config :date-logic)))
+              (funcall date-logic-fn (current-time))))))
     (message "--- Starting Phase A: Questionnaire Generation for period %s to %s ---"
              (cdr (assoc :start-date-str date-range)) (cdr (assoc :end-date-str date-range)))
     (life-os--execute-review-phase
      (plist-get config :phase-a)
      config
-     date-range ; <-- Pass the entire date-range alist
+     date-range
      nil
      #'life-os-phase-a-mode)))
 ;; ==============================================================================
@@ -653,9 +665,16 @@ initiates Phase A."
 (defun life-os-conduct-annual-review ()
   "Run the interactive Annual Vision & Codex cycle."
   (interactive)
-  (message "This review cycle is not yet configured.")
-  ;; (life-os-run-review-cycle life-os-config--annual-review)
-  )
+  (message "This review cycle is not yet configured."))
+(defun life-os-conduct-historical-intra-month-review ()
+  "Run the Intra-Month Review for a specific, user-provided date range."
+  (interactive)
+  (let ((start-date (read-string "Enter start date (YYYY-MM-DD): "))
+        (end-date (read-string "Enter end date (YYYY-MM-DD): ")))
+    (if (and (string-match-p "\\`[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\'" start-date)
+             (string-match-p "\\`[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\'" end-date))
+        (life-os-run-review-cycle life-os-config--intra-month-review start-date end-date)
+      (user-error "Invalid date format. Please use YYYY-MM-DD."))))
 ;; ==============================================================================
 ;; LIFEOS: ENGINE CONSTANTS & HELPERS
 ;; ==============================================================================
@@ -1353,45 +1372,54 @@ back to today's Daily Command Center (DCC) file."
 
 (defun life-os--get-latest-session-log ()
   "Return the file path of the most recently completed session log."
-  (let* ((session-dir (expand-file-name "sessions/" lifeos-logs-dir))
+  (let* ((session-dir lifeos-sessions-dir)
          (session-files (directory-files session-dir t "Session-\\(.*\\)\\.org$")))
     (when session-files
       (car (sort session-files #'string-greaterp)))))
 
-(defun life-os-generate-daily-plan ()
-  "Non-interactively generate today's Daily Command Center (DCC) file.
-This function is intended to be called automatically by a system timer."
-  (interactive)
-  (message "LifeOS: Beginning Daily Command Center generation...")
-  (let* ((dcc-path (life-os--generate-dcc-path))
-         (dcc-year (format-time-string "%Y"))
-         ;; --- 1. Gather All Contextual Data ---
-         (last-session-path (life-os--get-latest-session-log))
-         (last-session-content (if last-session-path
-                                   (with-temp-buffer (insert-file-contents-literally last-session-path) (buffer-string))
-                                 "No previous session data available."))
-         (annual-codex (life-os--get-annual-codex-content dcc-year))
-         (cycle-outlook (life-os--get-cycle-outlook-content))
-         (task-horizon (life-os--get-global-task-horizon))
-         (todays-numerology (life-os--get-numerology-block-for-date (format-time-string "%Y-%m-%d")))
-         (prompt-template (life-os-read-prompt (expand-file-name "5_Daily_Gen.org" lifeos-prompts-dir))) ; Use lifeos-prompts-dir
-         ;; --- 2. Assemble the Final Prompt ---
-         (final-prompt prompt-template))
-    (setq final-prompt (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_ANNUAL_CODEX]") annual-codex final-prompt t t))
-    (setq final-prompt (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_9_DAY_CYCLE_OUTLOOK_BLOCK]") cycle-outlook final-prompt t t))
-    (setq final-prompt (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_LAST_SESSION_LOG]") last-session-content final-prompt t t))
-    (setq final-prompt (replace-regexp-in-string (regexp-quote "[GLOBAL_TASK_HORIZON_DATA]") task-horizon final-prompt t t))
-    (setq final-prompt (replace-regexp-in-string (regexp-quote "[TODAYS_ENERGETIC_MATRIX]") todays-numerology final-prompt t t))
-    ;; --- 3. Call AI and Write to File ---
-    (message "Sending briefing request to AI...")
-    (let ((ai-response (life-os-extract-text-from-ai-response (life-os-call-ai final-prompt 'pro))))
-      (if (string-empty-p ai-response)
-          (error "LifeOS Error: Received empty response from AI for daily plan.")
-        (make-directory (file-name-directory dcc-path) t)
-        (with-temp-buffer
-          (insert ai-response)
-          (write-file dcc-path nil))
-        (message "LifeOS: Successfully generated and saved today's DCC to %s" dcc-path)))))
+(defun life-os-generate-daily-plan (&optional date-string)
+  "Non-interactively generate a Daily Command Center (DCC) file.
+Generates for DATE-STRING (YYYY-MM-DD) if provided, otherwise for today.
+Intended to be called automatically or for historical data generation."
+  (interactive
+   (list (read-string "Generate DCC for date (YYYY-MM-DD) [optional, defaults to today]: ")))
+  (let* ((target-time (if (and date-string (not (string-empty-p date-string)))
+                          (org-time-string-to-time date-string)
+                        (current-time)))
+         (target-date-str (format-time-string "%Y-%m-%d" target-time)))
+    (message "LifeOS: Beginning DCC generation for %s..." target-date-str)
+    (let* ((dcc-path (life-os--generate-dcc-path target-time))
+           (dcc-year (format-time-string "%Y" target-time))
+           ;; --- 1. Gather All Contextual Data ---
+           ;; Note: These functions find the *most recent* data relative to now, which
+           ;; is the correct behavior for simulating a historical run. The AI's job
+           ;; is to synthesize the state *as it was then*.
+           (last-session-path (life-os--get-latest-session-log))
+           (last-session-content (if last-session-path
+                                     (with-temp-buffer (insert-file-contents-literally last-session-path) (buffer-string))
+                                   "No previous session data available."))
+           (annual-codex (life-os--get-annual-codex-content dcc-year))
+           (cycle-outlook (life-os--get-cycle-outlook-content target-time)) ;; Pass time for recency check
+           (task-horizon (life-os--get-global-task-horizon))
+           (todays-numerology (life-os--get-numerology-block-for-date target-date-str))
+           (prompt-template (life-os-read-prompt (expand-file-name "5_Daily_Gen.org" lifeos-prompts-dir)))
+           ;; --- 2. Assemble the Final Prompt ---
+           (final-prompt prompt-template))
+      (setq final-prompt (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_ANNUAL_CODEX]") (or annual-codex "") final-prompt t t))
+      (setq final-prompt (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_9_DAY_CYCLE_OUTLOOK_BLOCK]") (or cycle-outlook "") final-prompt t t))
+      (setq final-prompt (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_LAST_SESSION_LOG]") last-session-content final-prompt t t))
+      (setq final-prompt (replace-regexp-in-string (regexp-quote "[GLOBAL_TASK_HORIZON_DATA]") task-horizon final-prompt t t))
+      (setq final-prompt (replace-regexp-in-string (regexp-quote "[TODAYS_ENERGETIC_MATRIX]") todays-numerology final-prompt t t))
+      ;; --- 3. Call AI and Write to File ---
+      (message "Sending briefing request to AI for %s..." target-date-str)
+      (let ((ai-response (life-os-extract-text-from-ai-response (life-os-call-ai final-prompt 'pro))))
+        (if (string-empty-p ai-response)
+            (error "LifeOS Error: Received empty response from AI for daily plan.")
+          (make-directory (file-name-directory dcc-path) t)
+          (with-temp-buffer
+            (insert ai-response)
+            (write-file dcc-path nil))
+          (message "LifeOS: Successfully generated and saved DCC for %s to %s" target-date-str dcc-path))))))
 
 (defun life-os--append-to-active-log-inbox (content-string)
   "Appends CONTENT-STRING to the Inbox section of the active log file."
