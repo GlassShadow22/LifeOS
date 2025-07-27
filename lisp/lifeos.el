@@ -207,10 +207,13 @@ convention."
         ""))))
 (defun life-os--get-cycle-outlook-content (&optional target-date-time)
   "Find and return the content of the MOST RECENT tactical outlook file."
-  (let* ((search-date (or target-date-time (current-time))) (found-path nil) (counter 0))
+  (let* ((search-date (or target-date-time (current-time)))
+         (found-path nil)
+         (counter 0))
     (while (and (not found-path) (< counter 90))
       (let* ((date-str (format-time-string "%Y-%m-%d" search-date))
-             (path-prefix (format-time-string (concat lifeos-outlooks-dir "%%Y/%%m/") search-date)) ; Use lifeos-outlooks-dir
+             ;; Corrected: path-prefix is now a binding within the same let*
+             (path-prefix (expand-file-name (format-time-string "%Y/%m/" search-date) lifeos-outlooks-dir))
              (cycle-path (expand-file-name (format "%s-Cycle.org" date-str) path-prefix))
              (bridge-path (expand-file-name (format "%s-Bridge.org" date-str) path-prefix)))
         (cond
@@ -219,8 +222,13 @@ convention."
       (setq search-date (time-subtract search-date (days-to-time 1)))
       (setq counter (1+ counter)))
     (if found-path
-        (with-temp-buffer (insert-file-contents-literally found-path) (buffer-string))
-      (progn (message "LifeOS Context Warning: No recent tactical outlook found.") ""))))
+        (with-temp-buffer
+          (insert-file-contents-literally found-path)
+          (buffer-string))
+      (progn
+        (message "LifeOS Context Warning: No recent tactical outlook found.")
+        ""))))
+
 (defun life-os--get-dcc-history (start-date-string end-date-string)
   "Return the concatenated content of all DCC files within a date range."
   (let ((history-content ""))
@@ -230,7 +238,8 @@ convention."
         (let* ((year (format-time-string "%Y" current-time))
                (month (format-time-string "%m" current-time))
                (file-name (format "%s.org" (format-time-string "%Y-%m-%d" current-time)))
-               (file-path (expand-file-name (concat year "/" month "/" file-name) lifeos-logs-dir))) ; Use lifeos-logs-dir
+               ;; Corrected: file-path is now a binding within the same let*
+               (file-path (expand-file-name (concat year "/" month "/" file-name) lifeos-logs-dir)))
           (when (file-exists-p file-path)
             (with-temp-buffer
               (insert-file-contents-literally file-path)
