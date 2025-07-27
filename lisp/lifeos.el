@@ -57,6 +57,10 @@
   "The path to the LifeOS inbox file."
   :type 'file
   :group 'lifeos)
+(defcustom lifeos-sessions-dir (expand-file-name "sessions/" lifeos-journal-root)
+  "The directory for LifeOS session log files."
+  :type 'directory
+  :group 'lifeos)
 ;; --- [END] CORE PATH CONFIGURATION ---
 ;; --- [BEGIN] CORE USER DATA CONFIGURATION (Generalization v1.0) ---
 (defcustom lifeos-user-profile-name "Architect Reggy Elizer"
@@ -1180,7 +1184,7 @@ Returns 0 if the file does not exist or contains invalid data."
   "Initialize a new session log, inject habits, and open the file."
   (interactive)
   (let* ((session-number (life-os--increment-and-get-session-counter))
-         (session-path (expand-file-name (format "Session-%03d.org" session-number) (concat lifeos-logs-dir "sessions/"))))
+         (session-path (expand-file-name (format "Session-%03d.org" session-number) lifeos-sessions-dir)))
     (make-directory (file-name-directory session-path) t)
     ;; 1. Create the base session file
     (with-temp-buffer
@@ -1206,9 +1210,8 @@ Returns 0 if the file does not exist or contains invalid data."
   "Return the file path of the current log.
 Prioritizes the most recent session log. If none exists, falls
 back to today's Daily Command Center (DCC) file."
-  (let* ((session-dir (expand-file-name "sessions/" lifeos-logs-dir))
-         (session-files (and (file-directory-p session-dir)
-                             (directory-files session-dir t "Session-\\(.*\\)\\.org$"))))
+  (let* ((session-files (and (file-directory-p lifeos-sessions-dir)
+                           (directory-files lifeos-sessions-dir t "Session-\\(.*\\)\\.org$"))))
     (if session-files
         (car (sort session-files #'string-greaterp))
       (life-os--generate-dcc-path))))
