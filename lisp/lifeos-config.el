@@ -53,16 +53,17 @@
 ) ; End of (after! hydra ...) block
 
 (map! :leader :prefix "j"
-      :desc "Generate Daily Plan"     "g" #'life-os-generate-daily-plan
-      :desc "Begin New Session"       "b" #'life-os-begin-new-session
-      :desc "End and Review sessoin"  "e" #'life-os-end-session-review
-      :desc "AI Strategic Planner"    "P" #'life-os-plan-my-schedule
-      :desc "Quick Capture Task"      "t" #'hydra-life-os-state-selector/body
-      :desc "Capture Wizard (Full)"   "c" #'life-os-interactive-capture
-      :desc "Promote Note to Task"    "x" #'life-os-promote-note-to-task
-      :desc "Process Item at Point"   "p" #'life-os-process-item-at-point
-      :desc "Schedule Task at Point"  "s" #'life-os-schedule-task-at-point
-      :desc "Set Deadline at Point"   "d" #'life-os-deadline-task-at-point
+      :desc "Generate Daily Plan"               "g" #'life-os-generate-daily-plan
+      :desc "Begin New Session"                 "b" #'life-os-begin-new-session
+      :desc "End and Review sessoin"            "e" #'life-os-end-session-review
+      :desc "AI Strategic Planner"              "P" #'life-os-plan-my-schedule
+      :desc "Quick Capture Task"                "t" #'hydra-life-os-state-selector/body
+      :desc "Capture Wizard (Full)"             "c" #'life-os-interactive-capture
+      :desc "Promote Plain Text Note to Task"   "x" #'life-os-promote-note-to-task
+      :desc "Promote Structured Line to Task"   "X" #'life-os-promote-structured-line-to-task
+      :desc "Process Item at Point"             "p" #'life-os-process-item-at-point
+      :desc "Schedule Task at Point"            "s" #'life-os-schedule-task-at-point
+      :desc "Set Deadline at Point"             "d" #'life-os-deadline-task-at-point
       ;; Your other verified keybindings will be added here later
       )
 
