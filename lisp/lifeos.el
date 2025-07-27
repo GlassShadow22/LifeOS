@@ -729,6 +729,16 @@ non-interactive parsing bugs."
         (when (stringp item)
           (push (car (split-string item "(")) all-keywords))))
     (nreverse all-keywords)))
+(defun life-os--append-to-inbox-and-save (content-string)
+  "Appends CONTENT-STRING to the LifeOS inbox file and saves the buffer.
+Returns t on success, nil on failure."
+  (let ((inbox-buffer (find-file-noselect lifeos-inbox-file)))
+    (with-current-buffer inbox-buffer
+      (goto-char (point-max))
+      ;; Ensure there's a newline before appending
+      (unless (bolp) (insert "\n"))
+      (insert content-string)
+      (save-buffer))))
 ;; ==============================================================================
 ;; LIFEOS: DYNAMIC ORG CAPTURE SCHEDULER (v5.1 - Thrust 2.A)
 ;; ==============================================================================
@@ -820,7 +830,7 @@ enhancements to generate context-aware suggestions."
                 (insert "  :END:")
                 (buffer-string))) ; This is the single value returned for the let* binding.
              (pointer (format "- %s%s %s [[id:%s]]" state (if (string-empty-p priority) "" (format " [#%s]" priority)) headline id)))
-        (when (life-os--append-to-file-robust lifeos-inbox-file full-headline)
+        (when (life-os--append-to-inbox-and-save full-headline)
           (life-os--append-to-active-log-inbox pointer)
           (message "LifeOS: Quick-captured '%s'" headline))))))
 ;; --- [BEGIN] 3rd Gear: Full Interactive Capture Wizard ---
@@ -876,7 +886,7 @@ This function gathers full metadata but does not perform scheduling."
             (insert "  :END:")
             (buffer-string))))
     ;; --- STAGE 6: FINALIZATION & POINTER CREATION ---
-    (when (life-os--append-to-file-robust lifeos-inbox-file full-headline)
+    (when (life-os--append-to-inbox-and-save full-headline)
       (let* (;; For now, use the robust static pointer. AI summary can be a later enhancement.
              (summary (format "%s%s %s" state (if (string-empty-p priority) "" (format " [#%s]" priority)) headline))
              (pointer (format "- %s [[id:%s]]" summary id)))
@@ -1037,9 +1047,9 @@ If FILES is nil, defaults to the global `org-agenda-files`."
     (when current-option (push current-option options))
     (nreverse options)))
 
-(defun life-os--commit-ai-schedule ()
-  "Commit the user's selected schedule. To be called from the Action Review
-buffer."
+(defun life-os--commit-ai-schedule (&optional remaining-task-markers)
+  "Commit the user's selected schedule. To be called from the Action Review buffer.
+If REMAINING-TASK-MARKERS is provided, prompt to schedule the next one."
   (interactive)
   (let ((option-data (get-text-property (point) 'life-os-data))
         (task-marker life-os--action-review-task-marker)) ; Use the buffer-local var
@@ -1070,23 +1080,38 @@ buffer."
                  parent-id
                  (org-get-heading t t)
                  date-str
-                 confirm-with)))))))
-      (kill-buffer "*LifeOS Action Review*")))
+                 confirm-with))))))
+      (kill-buffer "*LifeOS Action Review*")
+      ;; --- [NEW] Recursive Processing Prompt ---
+      (when remaining-task-markers
+        (let ((next-task-marker (car remaining-task-markers)))
+          (with-current-buffer (marker-buffer next-task-marker)
+             (goto-char (marker-position next-task-marker))
+             (let ((next-task-heading (org-get-heading t t)))
+               (when (and next-task-heading
+                          (y-or-n-p (format "Scheduled current task. Process next 'SCHEDULE-ME' task ('%s')? " next-task-heading)))
+                 ;; Call plan-my-schedule recursively with the remaining list
+                 (life-os-plan-my-schedule nil (cdr remaining-task-markers))))))))))
+  ;; Ensure buffer is killed even if not proceeding recursively
+  (when (get-buffer "*LifeOS Action Review*")
+    (kill-buffer "*LifeOS Action Review*"))
 
-(defun life-os-plan-my-schedule (&optional files)
-  "Main entry point for AI-assisted scheduling, searchable over specific FILES."
+(defun life-os-plan-my-schedule (&optional files remaining-task-markers)
+  "Main entry point for AI-assisted scheduling, searchable over specific FILES.
+If REMAINING-TASK-MARKERS is provided, it's used instead of querying for tasks."
   (interactive)
-  (let ((task-markers (life-os--get-tasks-to-schedule files)))
-    ;; The rest of the function logic remains unchanged...
+  (let ((task-markers (or remaining-task-markers (life-os--get-tasks-to-schedule files))))
+    ;; The rest of the function logic remains largely unchanged...
     (if (not task-markers)
         (message "LifeOS: No tasks are currently marked 'SCHEDULE-ME'.")
       (progn
+        ;; Pass the CDR (remaining tasks) to commit function
         (let* ((task-to-process (car task-markers))
                (context (life-os--assemble-strategic-scheduling-context task-to-process files)) ; Pass files
                (prompt-template (life-os-read-prompt (expand-file-name "7_Strategic_Scheduler.org" lifeos-prompts-dir))) ; Use lifeos-prompts-dir
                (final-prompt (replace-regexp-in-string (regexp-quote "[TASK_DATA_PLACEHOLDER]") context prompt-template))
                (_ (message "Contacting AI with strategic context..."))
-               (ai-response (life-os-extract-text-from-ai-response (life-os-call-ai final-prompt 'flash)))
+               (ai-response (life-os-extract-text-from-ai-response (life-os-call-ai final-prompt 'pro)))
                (options (life-os--parse-ai-scheduling-options ai-response)))
           (if (not options)
               (message "AI did not return valid options. Please check response format.")
@@ -1104,7 +1129,82 @@ buffer."
               (use-local-map life-os--action-review-keymap)
               (make-local-variable 'life-os--action-review-task-marker) ; Make local var
               (setq life-os--action-review-task-marker task-to-process) ; Set local var
+              ;; Pass the remaining tasks to the commit function
+              (make-local-variable 'life-os--action-review-remaining-tasks)
+              (setq life-os--action-review-remaining-tasks (cdr task-markers))
               (pop-to-buffer (current-buffer)))))))))
+
+;; Add a helper variable definition (can be near other action review vars)
+;; This variable will hold the list of remaining tasks in the action review buffer
+(defvar-local life-os--action-review-remaining-tasks nil
+  "Buffer-local variable to hold the list of remaining task markers for recursive scheduling.")
+
+(defun life-os--commit-ai-schedule ()
+  "Commit the user's selected schedule. To be called from the Action Review buffer.
+This is a hardened, self-healing implementation that does not rely on a
+fully initialized Org-ID environment. It uses raw text parsing to ensure
+robustness."
+  (interactive)
+  (let ((option-data (get-text-property (point) 'life-os-data))
+        (task-marker life-os--action-review-task-marker)
+        (remaining-tasks life-os--action-review-remaining-tasks))
+    (when (and option-data task-marker)
+      (with-current-buffer (marker-buffer task-marker)
+        (goto-char (marker-position task-marker))
+
+        ;; --- [BEGIN] HARDENED DATA GATHERING (BRUTE-FORCE) ---
+        (let* ((original-title (org-entry-get (point) "ITEM"))
+               (has-appt-tag (member "APPT" (org-get-tags)))
+               (parent-id nil)
+               (confirm-with nil)
+               ;; Take a snapshot of the raw text of the properties drawer.
+               ;; This is immune to any Org API or environment state failures.
+               (properties-drawer-text
+                (save-excursion
+                  (when (re-search-forward "^[ \t]*:PROPERTIES:" nil t)
+                    (buffer-substring (match-beginning 0) (re-search-forward "^[ \t]*:END:" nil t))))))
+
+          ;; If we found a properties drawer, parse it with pure string matching.
+          (when properties-drawer-text
+            (with-temp-buffer
+              (insert properties-drawer-text)
+              (goto-char (point-min))
+              (when (re-search-forward ":Confirm_With:[ \t]+\\(.*\\)" nil t)
+                (setq confirm-with (match-string 1)))
+              (goto-char (point-min))
+              (when (re-search-forward ":ID:[ \t]+\\(.*\\)" nil t)
+                (setq parent-id (match-string 1)))))
+        ;; --- [END] HARDENED DATA GATHERING ---
+
+          ;; --- NOW, perform buffer modifications ---
+          (org-todo "AI-REC")
+          (unless parent-id (setq parent-id (org-id-get-create t))) ; If ID didn't exist, create it now.
+          (let* ((type (alist-get :type option-data))
+                 (date-str (format "<%s>" (alist-get :date option-data))))
+            (if (string= type "SCHEDULED") (org-schedule nil date-str) (org-deadline nil date-str))
+            (message "Task committed with AI recommendation.")
+            (unless (org-entry-get (point) "Confirmed_External")
+              (org-entry-put (point) "Confirmed_External" "no"))
+
+            ;; --- Final check with guaranteed-valid data ---
+            (when (and has-appt-tag confirm-with parent-id)
+              (message "L-OS INFO: Action Engine triggered for task '%s'." original-title)
+              (life-os--create-confirmation-child-task
+               parent-id
+               original-title
+               date-str
+               confirm-with)))))
+
+      ;; --- Recursive processing logic (unchanged) ---
+      (kill-buffer "*LifeOS Action Review*")
+      (when remaining-tasks
+        (let ((next-task-marker (car remaining-tasks)))
+          (with-current-buffer (marker-buffer next-task-marker)
+             (goto-char (marker-position next-task-marker))
+             (let ((next-task-heading (org-get-heading t t)))
+               (when (and next-task-heading
+                          (y-or-n-p (format "Scheduled current task. Process next 'SCHEDULE-ME' task ('%s')? " next-task-heading)))
+                 (life-os-plan-my-schedule nil (cdr remaining-tasks))))))))))
 ;; ==============================================================================
 ;; LIFEOS: HIERARCHICAL ACTION ENGINE (v5.3 - Thrust 2.C)
 ;; ==============================================================================
@@ -1136,7 +1236,7 @@ SCHEDULED-DATE-STR is an Org-style date string like `<YYYY-MM-DD ...>`."
 ")
             (buffer-string)))
          (pointer (format "- NEXT [#A] %s [[id:%s]]" child-title id)))
-    (when (life-os--append-to-file-robust lifeos-inbox-file full-headline)
+    (when (life-os--append-to-inbox-and-save full-headline)
       (life-os--append-to-active-log-inbox pointer)
       (message "Generated confirmation task for: %s" parent-title))))
 
@@ -1144,8 +1244,8 @@ SCHEDULED-DATE-STR is an Org-style date string like `<YYYY-MM-DD ...>`."
 (defun life-os--update-parent-on-confirmation (&rest _)
   "Hook to run after a TODO state change.
 If a confirmation task is marked DONE, update its parent's
-`Confirmed_External` property."
-  (when (and (equal (org-state) "DONE")
+:Confirmed_External: property."
+  (when (and (equal org-state "DONE") ; <-- CORRECTED: No parentheses around org-state
              (string-match-p "Confirm Appt:" (org-get-heading t t)))
     (let ((parent-link (org-entry-get (point) "PARENT")))
       (when parent-link
