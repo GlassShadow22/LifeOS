@@ -2,33 +2,76 @@
 ;; This file contains the complete, verified, and debugged library of helper
 ;; functions for the unified review orchestrator.
 ;; This version incorporates the corrected numerology engine.
-
 (require 'org-ql)
-
 (defgroup lifeos nil "Configuration for the LifeOS." :group 'org)
 
+;; --- [BEGIN] CORE PATH CONFIGURATION (Generalization v1.0) ---
 (defcustom lifeos-journal-root "~/journal/"
   "The root directory for the LifeOS journal system."
   :type 'directory
   :group 'lifeos)
-;; ... create similar defcustoms for /logs, /worksheets, /outlooks, etc.
+
+(defcustom lifeos-logs-dir (expand-file-name "logs/" lifeos-journal-root)
+  "The directory for LifeOS log files (e.g., DCCs, sessions)."
+  :type 'directory
+  :group 'lifeos)
+
+(defcustom lifeos-worksheets-dir (expand-file-name "worksheets/" lifeos-journal-root)
+  "The directory for LifeOS worksheet files."
+  :type 'directory
+  :group 'lifeos)
+
+(defcustom lifeos-outlooks-dir (expand-file-name "outlooks/" lifeos-journal-root)
+  "The directory for LifeOS outlook files."
+  :type 'directory
+  :group 'lifeos)
+
+(defcustom lifeos-prompts-dir (expand-file-name ".prompts/" lifeos-journal-root)
+  "The directory for LifeOS AI prompt template files."
+  :type 'directory
+  :group 'lifeos)
+
+(defcustom lifeos-system-dir (expand-file-name ".system/" lifeos-journal-root)
+  "The directory for LifeOS system files (e.g., parent cache)."
+  :type 'directory
+  :group 'lifeos)
+
+;; Assuming inbox is directly in the journal root, adjust path as needed
+(defcustom lifeos-inbox-file (expand-file-name "inbox.org" lifeos-journal-root)
+  "The path to the LifeOS inbox file."
+  :type 'file
+  :group 'lifeos)
+
+;; --- [END] CORE PATH CONFIGURATION ---
+
+;; --- [BEGIN] CORE USER DATA CONFIGURATION (Generalization v1.0) ---
+(defcustom lifeos-user-profile-name "Architect Reggy Elizer"
+  "The user's name for LifeOS context."
+  :type 'string
+  :group 'lifeos)
+
+(defcustom lifeos-user-birth-date "1993-10-18"
+  "The user's birth date (YYYY-MM-DD) for numerology calculations."
+  :type 'string
+  :group 'lifeos)
+;; --- [END] CORE USER DATA CONFIGURATION ---
+
 
 ;; ==============================================================================
 ;; LIFEOS: FOUNDATIONAL UTILITIES (API & Data Processing)
 ;; ==============================================================================
-
 (defun life-os-call-ai (prompt-text &optional provider)
   "Send PROMPT-TEXT to the specified LifeOS AI PROVIDER and return the RAW PARSED JSON response."
   (require 'plz) (require 'json)
   (let* ((--provider (or provider 'pro))
-         (api-key (funcall (plist-get (car (auth-source-search :host "apikey.generativelanguage.googleapis.com")) :secret)))
+         (api-key (or (getenv "LIFEOS_GEMINI_API_KEY")
+		      (funcall (plist-get (car (auth-source-search :host "apikey.generativelanguage.googleapis.com")) :secret))))
          (model-endpoint (pcase --provider ('pro "gemini-2.5-pro") ('flash "gemini-2.5-flash")))
          (url (format "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s" model-endpoint (url-encode-url api-key)))
          (data-payload `(("contents" . [(("parts" . [(("text" . ,prompt-text))]))])))
          (request-body (json-encode data-payload)))
     (message "Sending AI request... (Model: %s)" model-endpoint)
     (plz 'post url :headers '(("Content-Type" . "application/json")) :body request-body :as 'json-read)))
-
 (defun life-os-extract-text-from-ai-response (ai-response-data)
   "Extract the generated text string from the AI's raw JSON response."
   (let* ((candidates (alist-get 'candidates ai-response-data))
@@ -38,7 +81,6 @@
          (first-part (when parts (elt parts 0)))
          (generated-text (when first-part (alist-get 'text first-part))))
     (or generated-text "")))
-
 (defun life-os-read-prompt (prompt-full-path)
   "Reads the content of a Master AI Prompt file by its full path."
   (unless (file-exists-p prompt-full-path)
@@ -46,43 +88,35 @@
   (with-temp-buffer
     (insert-file-contents-literally prompt-full-path)
     (buffer-string)))
-
-
 ;; ==============================================================================
 ;; LIFEOS: PATH GENERATION HELPERS
 ;; ==============================================================================
-
 (defun life-os--generate-annual-worksheet-path (year-string)
   "Generate the canonical file path for a given year's Annual Vision worksheet."
   (expand-file-name (format "%s-Vision.org" year-string)
                     (concat (file-name-as-directory lifeos-worksheets-dir)
                             year-string "/")))
-
 (defun life-os--generate-annual-outlook-path (year-string)
   "Generate the canonical file path for a given year's Annual Codex outlook."
   (expand-file-name (format "%s-Codex.org" year-string)
                     (concat (file-name-as-directory lifeos-outlooks-dir)
                             year-string "/")))
-
 (defun life-os--generate-monthly-worksheet-path (year-string month-string)
   "Generate the canonical file path for a monthly Debrief worksheet."
   (expand-file-name (format "%s-%s-Debrief.org" year-string month-string)
                     (concat (file-name-as-directory lifeos-worksheets-dir)
                             year-string "/")))
-
 (defun life-os--generate-monthly-outlook-path (year-string month-string)
   "Generate the canonical file path for a monthly Directive outlook."
   (expand-file-name (format "%s-%s-Directive.org" year-string month-string)
                     (concat (file-name-as-directory lifeos-outlooks-dir)
                             year-string "/" month-string "/")))
-
 (defun life-os--generate-intra-month-worksheet-path (cycle-end-date-string)
   "Generate the canonical path for an Intra-Month Cycle Review worksheet."
   (let ((year-string (substring cycle-end-date-string 0 4)))
     (expand-file-name (format "%s-Cycle-Review.org" cycle-end-date-string)
                       (concat (file-name-as-directory lifeos-worksheets-dir)
                               year-string "/"))))
-
 (defun life-os--generate-intra-month-outlook-path (cycle-end-date-string)
   "Generate the canonical path for an Intra-Month Cycle outlook."
   (let ((year-string (substring cycle-end-date-string 0 4))
@@ -90,7 +124,6 @@
     (expand-file-name (format "%s-Cycle.org" cycle-end-date-string)
                       (concat (file-name-as-directory lifeos-outlooks-dir)
                               year-string "/" month-string "/"))))
-
 (defun life-os--generate-bridge-worksheet-path (date-range)
   "Generate bridge worksheet path using the YYYY-OUTMM-INMM-ENDDD.org convention."
   (let* ((start-date-str (cdr (assoc :start-date-str date-range)))
@@ -101,7 +134,6 @@
          (end-day (substring end-date-str 8 10)))
     (expand-file-name (format "%s-%s-%s-Bridge-Review.org" year-str outgoing-month incoming-month)
                       (concat (file-name-as-directory lifeos-worksheets-dir) year-str "/"))))
-
 (defun life-os--generate-bridge-outlook-paths (date-range)
   "Generate bridge outlook paths (list of 2) using YYYY-OUTMM-INMM-ENDDD.org convention."
   (let* ((start-date-str (cdr (assoc :start-date-str date-range)))
@@ -114,14 +146,12 @@
          (path1 (expand-file-name base-filename (format "%s%s/%s/" lifeos-outlooks-dir year-str outgoing-month)))
          (path2 (expand-file-name base-filename (format "%s%s/%s/" lifeos-outlooks-dir year-str incoming-month))))
     (list path1 path2)))
-
 (defun life-os--generate-dcc-path (&optional date)
   "Generate the canonical file path for a daily command center (DCC) file."
   (let ((time (or date (current-time))))
     (expand-file-name (format "%s.org" (format-time-string "%Y-%m-%d" time))
                       (concat (file-name-as-directory lifeos-logs-dir)
                               (format-time-string "%Y/%m/" time)))))
-
 (defun life-os--scheduler-get-heuristic-dates ()
   "Return a list of alists representing common heuristic dates for the scheduler."
   (let ((today (current-time))
@@ -137,11 +167,9 @@
        (:label . "In 2 days"))
      ;; Add more heuristics here, e.g., next weekend, etc.
      )))
-
 ;; ==============================================================================
 ;; LIFEOS: CONTEXT-GATHERING HELPERS
 ;; ==============================================================================
-
 (defun life-os--get-annual-codex-content (year-string)
   "Find and return the content of the Annual Codex file for YEAR-STRING."
   (let ((codex-path (life-os--generate-annual-outlook-path year-string)))
@@ -152,7 +180,6 @@
       (progn
         (message "LifeOS Context Warning: Annual Codex not found for year %s at path: %s" year-string codex-path)
         ""))))
-
 (defun life-os--get-monthly-directive-content (year-string month-string)
   "Find and return the content of a Monthly Directive file."
   (let ((directive-path (life-os--generate-monthly-outlook-path year-string month-string)))
@@ -163,13 +190,12 @@
       (progn
         (message "LifeOS Context Warning: Monthly Directive not found for %s-%s" year-string month-string)
         ""))))
-
 (defun life-os--get-cycle-outlook-content (&optional target-date-time)
   "Find and return the content of the MOST RECENT tactical outlook file."
   (let* ((search-date (or target-date-time (current-time))) (found-path nil) (counter 0))
     (while (and (not found-path) (< counter 90))
       (let* ((date-str (format-time-string "%Y-%m-%d" search-date))
-             (path-prefix (format-time-string "~/journal/outlooks/%Y/%m/" search-date))
+             (path-prefix (format-time-string "~/journal/outlooks/%Y/%m/" search-date)) ; TODO: Use lifeos-outlooks-dir
              (cycle-path (expand-file-name (format "%s-Cycle.org" date-str) path-prefix))
              (bridge-path (expand-file-name (format "%s-Bridge.org" date-str) path-prefix)))
         (cond
@@ -180,7 +206,6 @@
     (if found-path
         (with-temp-buffer (insert-file-contents-literally found-path) (buffer-string))
       (progn (message "LifeOS Context Warning: No recent tactical outlook found.") ""))))
-
 (defun life-os--get-dcc-history (start-date-string end-date-string)
   "Return the concatenated content of all DCC files within a date range."
   (let ((history-content ""))
@@ -190,17 +215,20 @@
         (let* ((year (format-time-string "%Y" current-time))
                (month (format-time-string "%m" current-time))
                (file-name (format "%s.org" (format-time-string "%Y-%m-%d" current-time)))
-               (file-path (expand-file-name (concat year "/" month "/" file-name) "~/journal/logs/")))
+               (file-path (expand-file-name (concat year "/" month "/" file-name) "~/journal/logs/"))) ; TODO: Use lifeos-logs-dir
           (when (file-exists-p file-path)
             (with-temp-buffer
               (insert-file-contents-literally file-path)
               (setq history-content (concat history-content
-                                            "\n\n--- Start DCC " (file-name-base file-path) " ---\n"
+                                            "
+--- Start DCC " (file-name-base file-path) " ---
+"
                                             (buffer-string)
-                                            "\n--- End DCC " (file-name-base file-path) " ---\n")))))
+                                            "
+--- End DCC " (file-name-base file-path) " ---
+")))))
         (setq current-time (time-add current-time (days-to-time 1)))))
     history-content))
-
 (defun life-os--get-worksheet-content ()
   "Interactively prompt the user to select a completed worksheet file."
   (condition-case nil
@@ -213,11 +241,9 @@
             (message "No valid worksheet file selected.")
             "")))
     (quit (progn (message "Worksheet selection cancelled by user (C-g).") ""))))
-
 ;; ==============================================================================
 ;; LIFEOS: NUMEROLOGY & DYNAMIC DATA HELPERS
 ;; ==============================================================================
-
 ;; --- [BEGIN] CORE NUMEROLOGY ENGINE (BUG-FIXED) ---
 (defun life-os--reduce-number (n &optional is-life-path-p)
   "Reduce a number N according to numerology rules. Master numbers are preserved ONLY if IS-LIFE-PATH-P."
@@ -231,7 +257,6 @@
          (setq n (/ n 10)))
        sum)
      is-life-path-p)))
-
 (defun life-os--calculate-personal-year (birth-date-string target-date-string)
   (let* ((birth-month (string-to-number (substring birth-date-string 5 7)))
          (birth-day (string-to-number (substring birth-date-string 8 10)))
@@ -241,23 +266,21 @@
          (y3 (life-os--reduce-number birth-day))
          (sum (+ y1 y2 y3)))
     (life-os--reduce-number sum)))
-
 (defun life-os--calculate-personal-month (personal-year target-date-string)
   (let* ((target-month (string-to-number (substring target-date-string 5 7)))
          (sum (+ personal-year target-month)))
     (life-os--reduce-number sum)))
-
 (defun life-os--calculate-personal-day (personal-month target-date-string)
   (let* ((target-day (string-to-number (substring target-date-string 8 10)))
          (sum (+ personal-month target-day)))
     (life-os--reduce-number sum)))
-
 (defun life-os-calculate-numerology-for-date (target-date-string)
-  (let* ((life-path 5)
+  ;; --- [MODIFIED] Use customizable user data ---
+  (let* ((life-path 5) ; TODO: Make life-path customizable if needed
          (annual-essence-table
           '(("2025" . 7) ("2026" . 7) ("2027" . 7) ("2028" . 7) ("2029" . 9)
             ("2030" . 9) ("2031" . 9) ("2032" . 9) ("2033" . 5)))
-         (user-birth-date "1993-10-18")
+         (user-birth-date lifeos-user-birth-date) ; Use customizable variable
          (target-year-string (substring target-date-string 0 4))
          (personal-year (life-os--calculate-personal-year user-birth-date target-date-string))
          (personal-month (life-os--calculate-personal-month personal-year target-date-string))
@@ -267,7 +290,6 @@
     `((life-path . ,life-path) (personal-year . ,personal-year) (personal-month . ,personal-month)
       (personal-day . ,personal-day) (annual-essence . ,annual-essence))))
 ;; --- [END] CORE NUMEROLOGY ENGINE (BUG-FIXED) ---
-
 (defun life-os--find-next-pd-with-num (pd-num &optional start-date)
   "Find the first upcoming date that is the given Personal Day PD-NUM.
 Searches forward from START-DATE (or today)."
@@ -284,20 +306,20 @@ Searches forward from START-DATE (or today)."
       (setq search-time (time-add search-time (days-to-time 1)))
       (setq counter (1+ counter)))
     (or found-date (error "LifeOS Error: Could not find a PD %d in the next 90 days." pd-num))))
-
-
 (defun life-os--get-numerology-block-for-date (date-string)
   "Calculate and return a formatted string of the numerological data for DATE-STRING."
   (let ((numerology-data (life-os-calculate-numerology-for-date date-string)))
     (if numerology-data
         (format
-         "- Personal Year (PY): %d\n- Personal Month (PM): %d\n- Personal Day (PD): %d\n- Annual Essence (E): %d"
+         "- Personal Year (PY): %d
+- Personal Month (PM): %d
+- Personal Day (PD): %d
+- Annual Essence (E): %d"
          (alist-get 'personal-year numerology-data)
          (alist-get 'personal-month numerology-data)
          (alist-get 'personal-day numerology-data)
          (alist-get 'annual-essence numerology-data))
       "Numerological data could not be calculated.")))
-
 (defun life-os--get-numerology-block-for-month-transition (start-date-string end-date-string)
   "Calculate and return a formatted string analyzing a month-end numerological transition. (Hardened v2)"
   (let* ((start-date (org-time-string-to-time start-date-string))
@@ -318,16 +340,18 @@ Searches forward from START-DATE (or today)."
               (setq current-date (time-add current-date (days-to-time 1)))))
           (setq pd-sequence (nreverse pd-sequence))
           (format
-           "- Mega-Flow (PM Transition): %d -> %d\n- Micro-Flow (PD Sequence): %s"
+           "- Mega-Flow (PM Transition): %d -> %d
+- Micro-Flow (PD Sequence): %s"
            outgoing-pm incoming-pm
            (mapconcat #'number-to-string pd-sequence " -> ")))
       (progn (message "Error: Could not calculate initial numerology for the date range.") nil))))
-
 (defun life-os--get-static-user-data-block ()
   "Return a formatted string of static user profile data."
-  (format
-   "- User Profile: Architect Reggy Elizer\n- Date of Birth: 1993-10-18\n- Life Path: 5 (The Adventurer/Seeker of Freedom)"))
-
+  (format ; --- [MODIFIED] Use customizable user data ---
+   "- User Profile: %s
+- Date of Birth: %s
+- Life Path: 5 (The Adventurer/Seeker of Freedom)"
+   lifeos-user-profile-name lifeos-user-birth-date)) ; Use customizable variables
 (defun life-os--get-manual-metrics-block ()
   "Interactively prompt the user for waking state metrics and return them as a formatted string block."
   (interactive)
@@ -349,7 +373,6 @@ Searches forward from START-DATE (or today)."
 - Sauna Session (Previous Day): %s
 - Cold Plunge (Previous Day): %s"
      energy focus mood sleep weight keto sauna plunge)))
-
 (defun life-os--find-last-pd-cycle-end (pd-num)
   "Find the most recent date that was the given Personal Day PD-NUM.
 Searches backwards up to 30 days."
@@ -364,7 +387,6 @@ Searches backwards up to 30 days."
       (setq counter (1+ counter)))
     ;; Return the date object or throw an error if not found.
     (or found-date (error "LifeOS Error: Could not find a PD %d in the last 30 days." pd-num))))
-
 (defun life-os--get-previous-month-date-range (target-date-obj)
   "Calculate the start and end dates of the month prior to TARGET-DATE-OBJ.
 Returns an alist with keys :start-date-str and :end-date-str."
@@ -377,7 +399,6 @@ Returns an alist with keys :start-date-str and :end-date-str."
                                            (days-to-time 1)))
          (end-date-str (format-time-string "%Y-%m-%d" end-of-month-time)))
     `((:start-date-str . ,start-date-str) (:end-date-str . ,end-date-str))))
-
 (defun life-os--get-bridge-cycle-date-range (target-date-obj)
   "Calculate the deterministic bridge period for the month of TARGET-DATE-OBJ.
 (Corrected for variable scope)."
@@ -411,7 +432,6 @@ Returns an alist with keys :start-date-str and :end-date-str."
     ;; 5. Return the final, correct date range alist.
     `((:start-date-str . ,(format-time-string "%Y-%m-%d" start-date-obj))
       (:end-date-str . ,(format-time-string "%Y-%m-%d" end-date-obj)))))
-
 (defun life-os--scheduler-get-numerology-dates ()
   "Return a list of alists representing key upcoming numerological dates."
   (let ((today (current-time))
@@ -428,7 +448,6 @@ Returns an alist with keys :start-date-str and :end-date-str."
                       (9 "Next PD 9 (Completion)"))))
         (push `((:date . ,found-date) (:label . ,label) (:desc . ,date-str)) dates)))
     (nreverse dates)))
-
 (defun life-os--scheduler-get-scheduled-view-data (tag)
   "Return a list of alists representing days with synergistic or open schedules.
 Currently a placeholder for a more complex agenda query."
@@ -442,11 +461,9 @@ Currently a placeholder for a more complex agenda query."
    `((:date . ,(time-add (current-time) (days-to-time 3)))
      (:label . "Next Open Weekday (SAMPLE)")
      (:desc . "Finds the first upcoming weekday with 0 tasks scheduled."))))
-
 ;; ==============================================================================
 ;; LIFEOS: REVIEW CYCLE ENGINE (v3.2 FINAL - Full Context)
 ;; ==============================================================================
-
 ;; --- Configuration Profiles (v2 - Phase-Separated & Fully Defined) ---
 (defconst life-os-config--intra-month-review
   '(:name "Intra-Month Tactical Review"
@@ -460,9 +477,7 @@ Currently a placeholder for a more complex agenda query."
                                   (:placeholder "[CYCLE_DCC_HISTORY]" :source-fn life-os--get-dcc-history)
                                   (:placeholder "[USER_ANSWERS_TO_INTRA_MONTH_QUESTIONNAIRE]" :source-fn :user-answers))
               :output-path-fn life-os--generate-intra-month-outlook-path)))
-
 ;; NOTE: Other review configs are stubs. Their full definition would follow the pattern above.
-
 (defconst life-os-config--bridge-review
   '(:name "Bridge Cycle Ebb & Flow Review"
     :date-logic life-os--get-bridge-cycle-date-range
@@ -481,7 +496,6 @@ Currently a placeholder for a more complex agenda query."
                                   (:placeholder "[NUMEROLOGICAL_FLOW]" :source-fn life-os--get-numerology-block-for-month-transition)
                                   (:placeholder "[PASTE_USER_ANSWERS_TO_BRIDGE_CYCLE_QUESTIONNAIRE_HERE]" :source-fn :user-answers))
               :output-path-fn life-os--generate-bridge-outlook-paths)))
-
 (defconst life-os-config--monthly-review
   '(:name "Monthly Debrief & Directive"
     :date-logic life-os--get-previous-month-date-range
@@ -496,15 +510,10 @@ Currently a placeholder for a more complex agenda query."
                                   (:placeholder "[CONTENTS_OF_PAST_MONTHS_TACTICAL_PLANNER_FILE]" :source-fn life-os--get-monthly-directive-content)
                                   (:placeholder "[PASTE_USER_ANSWERS_TO_MONTHLY_DEBRIEF_QUESTIONNAIRE_HERE]" :source-fn :user-answers))
               :output-path-fn life-os--generate-monthly-outlook-path)))
-
 (defconst life-os-config--annual-review
   '(:name "Annual Vision & Codex" :date-logic :previous-year :phase-a '() :phase-b '()))
-
-
 ;; --- Engine State & Save Logic ---
-
 (defvar-local life-os--correction-buffer-data nil "Buffer-local alist to store state for the correction buffer.")
-
 (defun life-os-save-and-proceed-correction-buffer ()
   "Saves Phase A worksheet and proceeds to Phase B."
   (interactive)
@@ -521,7 +530,6 @@ Currently a placeholder for a more complex agenda query."
         (make-directory (file-name-directory output-path) t) (write-region (point-min) (point-max) output-path)
         (kill-buffer (current-buffer)) (message "Phase A saved. Proceeding to Phase B...")
         (life-os--execute-review-phase (plist-get config :phase-b) config date-range `((user-answers . ,user-answers)) #'life-os-phase-b-mode)))))
-
 (defun life-os-save-final-outlook-buffer ()
   "Saves the final Phase B outlook."
   (interactive)
@@ -540,15 +548,11 @@ Currently a placeholder for a more complex agenda query."
         (make-directory (file-name-directory path) t) (write-region (point-min) (point-max) path) (message "LifeOS: Saved to %s" path))
       (message "SUCCESS: Review cycle '%s' complete." (plist-get config :name))
       (kill-buffer (current-buffer)) (delete-window))))
-
-
 ;; --- Engine Minor Modes ---
 (defvar life-os-phase-a-mode-map (let ((map (make-sparse-keymap))) (define-key map (kbd "C-c C-c") #'life-os-save-and-proceed-correction-buffer) map) "Keymap for Phase A.")
 (defvar life-os-phase-b-mode-map (let ((map (make-sparse-keymap))) (define-key map (kbd "C-c C-c") #'life-os-save-final-outlook-buffer) map) "Keymap for Phase B.")
 (define-minor-mode life-os-phase-a-mode "LifeOS Phase A review buffer mode." :init-value nil :lighter " L-OS Phase A" :keymap life-os-phase-a-mode-map)
 (define-minor-mode life-os-phase-b-mode "LifeOS Phase B review buffer mode." :init-value nil :lighter " L-OS Phase B" :keymap life-os-phase-b-mode-map)
-
-
 ;; --- Core Engine & Phase Executor (Corrected for Date Logic) ---
 (defun life-os--execute-review-phase (phase-config top-level-config date-range extra-context current-mode-fn)
   "Executes one phase, injects full context (including special cases), and displays result."
@@ -584,7 +588,6 @@ Currently a placeholder for a more complex agenda query."
         (erase-buffer) (insert ai-text) (goto-char (point-min))
         (setq-local life-os--correction-buffer-data `((config . ,top-level-config) (date-range . ,date-range)))
         (funcall current-mode-fn 1) (message "Correction buffer ready. Press C-c C-c to commit.")))))
-
 (defun life-os-run-review-cycle (config)
   "Main entry point to run a full review cycle. Calculates date range and initiates Phase A."
   (message "BEGINNING REVIEW CYCLE: %s" (plist-get config :name))
@@ -598,57 +601,48 @@ Currently a placeholder for a more complex agenda query."
      date-range ; <-- Pass the entire date-range alist
      nil
      #'life-os-phase-a-mode)))
-
 ;; ==============================================================================
 ;; LIFEOS: USER INTERFACE COMMANDS (M-x)
 ;; ==============================================================================
-
 (defun life-os-conduct-intra-month-review ()
   "Run the interactive Intra-Month Tactical Review cycle."
   (interactive)
   (life-os-run-review-cycle life-os-config--intra-month-review))
-
 (defun life-os-conduct-bridge-review ()
   "Run the interactive Bridge Cycle Ebb & Flow Review."
   (interactive)
   (life-os-run-review-cycle life-os-config--bridge-review))
-
 (defun life-os-conduct-monthly-review ()
   "Run the interactive Monthly Debrief & Directive cycle."
   (interactive)
   (life-os-run-review-cycle life-os-config--monthly-review))
-
 (defun life-os-conduct-annual-review ()
   "Run the interactive Annual Vision & Codex cycle."
   (interactive)
   (message "This review cycle is not yet configured.")
   ;; (life-os-run-review-cycle life-os-config--annual-review)
   )
-
 ;; ==============================================================================
 ;; LIFEOS: ENGINE CONSTANTS & HELPERS
 ;; ==============================================================================
-
 (defconst life-os-canonical-properties
   '("PROJECT" "EFFORT" "Task_Type" "Blocked_By" "Confirm_With" "Confirmed_External")
   "Canonical list of fixed property keys for LifeOS. (Note: No colons).")
-
 (defconst life-os-canonical-tags
   '("Idea" "Epic" "Question" "Blocker" "Insight" "Resource" "Fleeting" "DeepWork"
     "ShallowWork" "Admin" "Calls" "Errands" "Family" "Friends" "Mentorship"
     "Urgent" "Review" "Epic")
   "Canonical list of fixed conceptual tags for LifeOS. (Note: No colons).")
-
 (defun life-os--append-to-file-robust (file-path content-string)
   "Robustly append CONTENT-STRING to FILE-PATH."
   (make-directory (file-name-directory file-path) t)
   (condition-case err
       (with-temp-buffer
-        (insert "\n" content-string)
+        (insert "
+" content-string)
         (append-to-file (point-min) (point-max) file-path)
         t) ; Return t on success
     ('error (message "LifeOS Error appending to %s: %s" file-path err) nil)))
-
 (defun life-os-update-parent-cache ()
   "Query inbox.org for :Epic: headlines and write their titles and IDs to the parent cache file.
 This version uses robust, low-level text searches to be resilient against non-interactive parsing bugs."
@@ -683,13 +677,14 @@ This version uses robust, low-level text searches to be resilient against non-in
               (push (format "%s | [[id:%s]]" title id) cache-lines))))))
     (with-temp-buffer
       (when cache-lines
-        (insert (mapconcat #'identity (nreverse cache-lines) "\n"))
-        (unless (bolp) (insert "\n")))
+        (insert (mapconcat #'identity (nreverse cache-lines) "
+"))
+        (unless (bolp) (insert "
+")))
       (make-directory (file-name-directory cache-file) t)
       (write-file cache-file nil)))
   ;; Do not message in a sub-routine; the main function will report status.
   )
-
 (defun life-os--get-all-todo-keywords-robust ()
   "Return a flat list of all defined TODO keywords, without separators."
   (let ((all-keywords '()))
@@ -698,14 +693,11 @@ This version uses robust, low-level text searches to be resilient against non-in
         (when (stringp item)
           (push (car (split-string item "(")) all-keywords))))
     (nreverse all-keywords)))
-
 ;; ==============================================================================
 ;; LIFEOS: DYNAMIC ORG CAPTURE SCHEDULER (v5.1 - Thrust 2.A)
 ;; ==============================================================================
-
 (defun life-os--scheduler-finalize-selection ()
   "Finalize the scheduling capture buffer.
-
 This function retrieves the 'life-os-data text property from the
 current line, stores the associated alist in `org-capture-plist`,
 and then calls `org-capture-finalize`."
@@ -714,7 +706,6 @@ and then calls `org-capture-finalize`."
     (when selection-data
       (setq org-capture-plist (plist-put org-capture-plist :life-os-scheduler-selection selection-data)))
     (org-capture-finalize)))
-
 (defvar life-os--scheduler-keymap
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'life-os--scheduler-finalize-selection)
@@ -722,37 +713,35 @@ and then calls `org-capture-finalize`."
     (define-key map (kbd "<down>") #'next-line)
     map)
   "Local keymap for the LifeOS scheduler capture buffer.")
-
 (defun life-os--scheduler-capture-template ()
   "Render the interactive scheduling dashboard in a capture buffer.
-
 This function is designed to be called via the :function property
 of an `org-capture-templates` entry. It generates the UI content,
 propertizes each candidate line with its source alist, and
 activates the local scheduler keymap."
   (goto-char (point-min))
-  (insert "--- [ LifeOS Scheduling Dashboard ] ---\n")
-  (insert "Select a date and press C-c C-c to confirm.\n\n")
+  (insert "--- [ LifeOS Scheduling Dashboard ]---
+")
+  (insert "Select a date and press C-c C-c to confirm.
+")
   (let ((candidates (append (life-os--scheduler-get-heuristic-dates)
                             (life-os--scheduler-get-numerology-dates))))
     (dolist (item candidates)
       (let* ((label (alist-get :label item))
              (desc (or (alist-get :desc item) ""))
-             (formatted-line (format "%-35s | %s\n" label desc)))
+             (formatted-line (format "%-35s | %s
+" label desc)))
         (insert (propertize formatted-line 'life-os-data item)))))
   (use-local-map life-os--scheduler-keymap)
   (goto-char (point-min))
   (next-line 3))
-
 (defun life-os-launch-scheduler-dynamic (&optional context-tags)
   "Launch the dynamic Org capture scheduling UI.
-
 This function programmatically creates a temporary capture template
 that uses `life-os--scheduler-capture-template` to render an
 interactive buffer. It launches a blocking `org-capture` session
 and, upon successful finalization, returns the data alist
 associated with the user's selection. Returns nil if cancelled.
-
 The optional CONTEXT-TAGS argument is a placeholder for future
 enhancements to generate context-aware suggestions."
   (interactive)
@@ -768,8 +757,6 @@ enhancements to generate context-aware suggestions."
     ;; `life-os--scheduler-finalize-selection` places the result in
     ;; the plist under this key before finalizing.
     (plist-get org-capture-plist :life-os-scheduler-selection)))
-
-
 (defun life-os--quick-capture-action (state priority)
   "Backend for Quick Capture. Captures a task with STATE and PRIORITY. (Corrected Syntax v3.0)"
   ;; The interactive spec is for standalone testing (M-x).
@@ -778,24 +765,26 @@ enhancements to generate context-aware suggestions."
          (cdr (assoc (completing-read "Priority: " '("[#A] High" "[#B] Medium" "[#C] Low" "[None]"))
                      '(("[#A] High" . "A") ("[#B] Medium" . "B")
                        ("[#C] Low" . "C") ("[None]" . ""))))))
-
   (let ((headline (read-string (format "Capture [%s]%s: " state (if (string-empty-p priority) "" (format " [#%s]" priority))))))
     (when (and headline (not (string-empty-p headline)))
       (let* ((id (org-id-new))
              (full-headline
               (with-temp-buffer
                 ;; All subsequent forms are now correctly inside the 'with-temp-buffer' block.
-                (insert (format "* %s %s%s\n" state (if (string-empty-p priority) "" (format "[#%s] " priority)) headline))
-                (insert "  :PROPERTIES:\n")
-                (insert (format "  :ID:        %s\n" id))
-                (insert (format "  :CREATED:   %s\n" (format-time-string "[%Y-%m-%d %a %H:%M]")))
+                (insert (format "* %s %s%s
+" state (if (string-empty-p priority) "" (format "[#%s] " priority)) headline))
+                (insert "  :PROPERTIES:
+")
+                (insert (format "  :ID:        %s
+" id))
+                (insert (format "  :CREATED:   %s
+" (format-time-string "[%Y-%m-%d %a %H:%M]")))
                 (insert "  :END:")
                 (buffer-string))) ; This is the single value returned for the let* binding.
              (pointer (format "- %s%s %s [[id:%s]]" state (if (string-empty-p priority) "" (format " [#%s]" priority)) headline id)))
         (when (life-os--append-to-file-robust lifeos-inbox-file full-headline)
           (life-os--append-to-active-log-inbox pointer)
           (message "LifeOS: Quick-captured '%s'" headline))))))
-
 ;; --- [BEGIN] 3rd Gear: Full Interactive Capture Wizard ---
 (defun life-os-interactive-capture ()
   "A comprehensive, interactive wizard for capturing a new, deeply-contextualized item.
@@ -813,12 +802,12 @@ This function gathers full metadata but does not perform scheduling."
           (when (y-or-n-p "Capture as subtask of an existing Epic? ")
             (life-os-update-parent-cache) ; Ensure cache is fresh
             (let* ((parents-cache (expand-file-name "parents.org" lifeos-system-dir))
-                   (parents (when (file-exists-p parents-cache) (split-string (with-temp-buffer (insert-file-contents-literally parents-cache) (buffer-string)) "\n" t)))
+                   (parents (when (file-exists-p parents-cache) (split-string (with-temp-buffer (insert-file-contents-literally parents-cache) (buffer-string)) "
+" t)))
                    (selection (when parents (completing-read "Select Parent Epic: " parents))))
               (when (and selection (string-match "\\(.*\\) | \\[\\[id:\\([a-zA-Z0-9T.-]+\\)\\]\\]" selection))
                 (setq parent-title (string-trim (match-string 1 selection)))
                 (match-string 2 selection)))))
-
          ;; --- STAGE 3 & 4: Tags & Properties ---
          (tags (completing-read-multiple "Tag(s) (SPC to separate): " life-os-canonical-tags))
          (properties
@@ -826,24 +815,27 @@ This function gathers full metadata but does not perform scheduling."
             (while (not (string= (setq key (completing-read "Add Property or [Done]: " (append '("[Done]") life-os-canonical-properties) nil t)) "[Done]"))
               (push `(,(intern (concat ":" key)) . ,(read-string (format "Value for %s: " key))) props))
             (nreverse props)))
-
          (id (org-id-new))
-
          ;; --- STAGE 5: Final Headline Assembly ---
          (full-headline
           (with-temp-buffer (org-mode)
             (insert (format "* %s %s%s" state (if (and priority (not (string-empty-p priority))) (format "[#%s] " priority) "") headline))
-            (when tags (insert (format " :%s:" (mapconcat #'identity tags ":")))) (insert "\n")
+            (when tags (insert (format " :%s:" (mapconcat #'identity tags ":")))) (insert "
+")
             ;; Note: No scheduling block here, as per our decoupled design.
-            (insert "  :PROPERTIES:\n")
-            (insert (format "  :ID:        %s\n" id))
-            (insert (format "  :CREATED:   %s\n" (format-time-string "[%Y-%m-%d %a %H:%M]")))
-            (when parent-id (insert (format "  :PARENT:    [[id:%s]]\n" parent-id)))
+            (insert "  :PROPERTIES:
+")
+            (insert (format "  :ID:        %s
+" id))
+            (insert (format "  :CREATED:   %s
+" (format-time-string "[%Y-%m-%d %a %H:%M]")))
+            (when parent-id (insert (format "  :PARENT:    [[id:%s]]
+" parent-id)))
             (dolist (prop properties)
-              (insert (format "  :%s: %s\n" (car prop) (cdr prop)))) ; Standardize property format
+              (insert (format "  :%s: %s
+" (car prop) (cdr prop)))) ; Standardize property format
             (insert "  :END:")
             (buffer-string))))
-
     ;; --- STAGE 6: FINALIZATION & POINTER CREATION ---
     (when (life-os--append-to-file-robust lifeos-inbox-file full-headline)
       (let* (;; For now, use the robust static pointer. AI summary can be a later enhancement.
@@ -851,7 +843,6 @@ This function gathers full metadata but does not perform scheduling."
              (pointer (format "- %s [[id:%s]]" summary id)))
         (life-os--append-to-active-log-inbox pointer))
       (message "LifeOS: Captured '%s' successfully." headline))))
-
 ;; --- [BEGIN] Escalation Path & Triage Suite ---
 (defun life-os-promote-note-to-task ()
   "Promote a plain text bullet point at point into a full LifeOS task."
@@ -871,9 +862,7 @@ This function gathers full metadata but does not perform scheduling."
       (with-current-buffer original-buffer
         (goto-char original-point)
         (delete-region (line-beginning-position) (line-end-position))))))
-
 ;; --- Triage Suite (Corrected with Org Element API) ---
-
 (defun life-os-process-item-at-point ()
   "Find the LifeOS ID link at point and jump to its source."
   (interactive)
@@ -890,15 +879,12 @@ This function gathers full metadata but does not perform scheduling."
           (message "Jumping to source for ID: %s" id)
           (org-id-goto id))
       (user-error "No LifeOS ID link found at point."))))
-
 ;; Helper advice for 'life-os-promote-note-to-task'
 (defvar read-string-initial-value nil
   "A temporary variable to hold an initial value for 'read-string'.")
-
 ;; ==============================================================================
 ;; LIFEOS: THRUST 2 - AI STRATEGIC SCHEDULER (Corrected v2.0)
 ;; ==============================================================================
-
 ;; MODIFIED: life-os--get-tasks-to-schedule
 ;; Now correctly creates and returns markers from the query results.
 ;; MODIFIED: life-os--get-tasks-to-schedule (v7.0.2)
@@ -909,7 +895,6 @@ If FILES is nil, defaults to the global `org-agenda-files'."
   (interactive)
   (org-ql-select (or files (org-agenda-files)) '(todo "SCHEDULE-ME")
     :action (lambda () (copy-marker (point)))))
-
 ;; MODIFIED: life-os-plan-my-schedule (v7.0.2)
 ;; Now accepts an optional FILES argument to pass to its helper.
 (defun life-os-plan-my-schedule (&optional files)
@@ -922,7 +907,7 @@ If FILES is nil, defaults to the global `org-agenda-files'."
       (progn
         (let* ((task-to-process (car task-markers))
                (context (life-os--assemble-strategic-scheduling-context task-to-process))
-               (prompt-template (life-os-read-prompt (expand-file-name "7_Strategic_Scheduler.org" "~/journal/.prompts/")))
+               (prompt-template (life-os-read-prompt (expand-file-name "7_Strategic_Scheduler.org" "~/journal/.prompts/"))) ; TODO: Use lifeos-prompts-dir
                (final-prompt (replace-regexp-in-string (regexp-quote "[TASK_DATA_PLACEHOLDER]") context prompt-template))
                (_ (message "Contacting AI with strategic context..."))
                (ai-response (life-os-extract-text-from-ai-response (life-os-call-ai final-prompt 'flash)))
@@ -932,7 +917,9 @@ If FILES is nil, defaults to the global `org-agenda-files'."
             (with-current-buffer (get-buffer-create "*LifeOS Action Review*")
               (erase-buffer)
               (dolist (opt options)
-                (insert (propertize (format "- %s (%s on %s)\n  - Rationale: %s\n"
+                (insert (propertize (format "- %s (%s on %s)
+  - Rationale: %s
+"
                                             (alist-get :desc opt)
                                             (alist-get :type opt)
                                             (alist-get :date opt)
@@ -941,11 +928,9 @@ If FILES is nil, defaults to the global `org-agenda-files'."
               (use-local-map life-os--action-review-keymap)
               (set-buffer-window-option (current-buffer) 'life-os-task-marker task-to-process)
               (pop-to-buffer (current-buffer)))))))))
-
 ;; ==============================================================================
 ;; LIFEOS: AI STRATEGIC SCHEDULER (v5.2 - Thrust 2.B)
 ;; ==============================================================================
-
 (defun life-os--get-tasks-to-schedule ()
   "Find all 'SCHEDULE-ME' tasks and return them as a list of markers.
 Uses a direct `org-ql` select, which is more efficient than
@@ -955,7 +940,6 @@ generating a view buffer."
                  :action #'org-element-at-point)))
     (when tasks
       (mapcar #'get-marker tasks))))
-
 (defun life-os--get-agenda-view-for-next-n-days (days files)
   "Return a string of agenda entries for DAYS from specific FILES."
   (let ((org-agenda-files files) ; Temporarily override the global list
@@ -966,9 +950,9 @@ generating a view buffer."
       (org-agenda-list t) ; Pass `t` to specify "current day" which respects the span
       (goto-char (point-min))
       ;; Clean up the output for a more concise prompt.
-      (while (re-search-forward "^[A-Za-z]+ .*$\n" nil t) (replace-match ""))
+      (while (re-search-forward "^[A-Za-z]+ .*$
+" nil t) (replace-match ""))
       (string-trim (buffer-string)))))
-
 ;; MODIFIED: life-os--assemble-strategic-scheduling-context (v7.0.2)
 ;; No change to signature, but its call to the helper now passes `files`.
 (defun life-os--assemble-strategic-scheduling-context (task-marker files)
@@ -981,13 +965,21 @@ generating a view buffer."
            (current-year (format-time-string "%Y"))
            (current-month (format-time-string "%m")))
       (string-join
-       `("--- Task to Schedule ---\n" ,task-data
-         "\n\n--- Annual Codex (Grand Strategy) ---\n" ,(life-os--get-annual-codex-content current-year)
-         "\n\n--- Monthly Directive (Tactical Orders) ---\n" ,(life-os--get-monthly-directive-content current-year current-month)
-         "\n\n--- Agenda View (Next 14 Days) ---\n" ,(life-os--get-agenda-view-for-next-n-days 14 files)
-         "\n\n--- Numerological Outlook (Next 14 Days) ---\n" ,(life-os--get-numerology-for-next-n-days 14))
+       `("--- Task to Schedule ---
+" ,task-data
+         "
+--- Annual Codex (Grand Strategy) ---
+" ,(life-os--get-annual-codex-content current-year)
+         "
+--- Monthly Directive (Tactical Orders) ---
+" ,(life-os--get-monthly-directive-content current-year current-month)
+         "
+--- Agenda View (Next 14 Days) ---
+" ,(life-os--get-agenda-view-for-next-n-days 14 files)
+         "
+--- Numerological Outlook (Next 14 Days) ---
+" ,(life-os--get-numerology-for-next-n-days 14))
        ""))))
-
 (defun life-os--get-numerology-for-next-n-days (days)
   "Return a string of numerological data for the next N days."
   (let ((output-string ""))
@@ -996,13 +988,13 @@ generating a view buffer."
              (date-str (format-time-string "%Y-%m-%d" date))
              (numerology (life-os-calculate-numerology-for-date date-str)))
         (setq output-string (concat output-string
-                                    (format "- %s: PD %d, PM %d, PY %d\n"
+                                    (format "- %s: PD %d, PM %d, PY %d
+"
                                             date-str
                                             (alist-get 'personal-day numerology)
                                             (alist-get 'personal-month numerology)
                                             (alist-get 'personal-year numerology))))))
     output-string))
-
 (defun life-os--parse-ai-scheduling-options (response-text)
   "Parse the AI's formatted Org-mode list into a list of alists."
   (let ((options '())
@@ -1028,7 +1020,6 @@ generating a view buffer."
         (forward-line 1)))
     (when current-option (push current-option options))
     (nreverse options)))
-
 (defun life-os--commit-ai-schedule ()
   "Commit the user's selected schedule. To be called from the Action Review buffer."
   (interactive)
@@ -1047,7 +1038,6 @@ generating a view buffer."
                 (org-schedule nil date-str)
               (org-deadline nil date-str))
             (message "Task committed with AI recommendation."))
-
           ;; --- [NEW] Child Task Creation Trigger ---
           (let ((confirm-with (org-entry-get (point) "Confirm_With"))
                 (parent-id (org-id-get-create)))
@@ -1063,7 +1053,6 @@ generating a view buffer."
                date-str
                confirm-with))))))
       (kill-buffer "*LifeOS Action Review*")))
-
 (defun life-os-plan-my-schedule (&optional files)
   "Main entry point for the AI-assisted strategic scheduling session."
   (interactive)
@@ -1078,25 +1067,23 @@ generating a view buffer."
           (with-current-buffer (get-buffer-create "*LifeOS Action Review*")
             (erase-buffer)
             (dolist (opt options)
-              (insert (propertize (format "- %s (...)\n" (alist-get :desc opt))
+              (insert (propertize (format "- %s (...)
+" (alist-get :desc opt))
                                   'life-os-data opt)))
             ;; --- [CORRECTED LOGIC] ---
             (make-local-variable 'life-os--action-review-task-marker)
             (setq life-os--action-review-task-marker task-to-process)
             (use-local-map life-os--action-review-keymap)
             (pop-to-buffer (current-buffer))))))))
-
 ;; ==============================================================================
 ;; LIFEOS: HIERARCHICAL ACTION ENGINE (v5.3 - Thrust 2.C)
 ;; ==============================================================================
-
 (defun life-os--calculate-confirmation-deadline (scheduled-date-str)
   "Calculate a confirmation deadline 2 days before a scheduled date.
 SCHEDULED-DATE-STR is an Org-style date string like '<YYYY-MM-DD ...>'."
   (let* ((time-obj (org-time-string-to-time scheduled-date-str))
          (deadline-obj (time-subtract time-obj (days-to-time 2))))
     (format-time-string "<%Y-%m-%d %a>" deadline-obj)))
-
 (defun life-os--create-confirmation-child-task (parent-id parent-title scheduled-date-str confirm-with)
   "Programmatically create and save a confirmation child task."
   (let* ((id (org-id-new))
@@ -1104,18 +1091,23 @@ SCHEDULED-DATE-STR is an Org-style date string like '<YYYY-MM-DD ...>'."
          (child-title (format "Confirm Appt: %s with %s" parent-title confirm-with))
          (full-headline
           (with-temp-buffer
-            (insert (format "* NEXT [#A] %s :Calls:Admin:\n" child-title))
-            (insert "  :PROPERTIES:\n")
-            (insert (format "  :DEADLINE:   %s\n" deadline))
-            (insert (format "  :PARENT:     [[id:%s]]\n" parent-id))
-            (insert (format "  :ID:         %s\n" id))
-            (insert "  :END:\n")
+            (insert (format "* NEXT [#A] %s :Calls:Admin:
+" child-title))
+            (insert "  :PROPERTIES:
+")
+            (insert (format "  :DEADLINE:   %s
+" deadline))
+            (insert (format "  :PARENT:     [[id:%s]]
+" parent-id))
+            (insert (format "  :ID:         %s
+" id))
+            (insert "  :END:
+")
             (buffer-string)))
          (pointer (format "- NEXT [#A] %s [[id:%s]]" child-title id)))
     (when (life-os--append-to-file-robust lifeos-inbox-file full-headline)
       (life-os--append-to-active-log-inbox pointer)
       (message "Generated confirmation task for: %s" parent-title))))
-
 ;; This hook function will be added to the config.el file.
 (defun life-os--update-parent-on-confirmation (&rest _)
   "Hook to run after a TODO state change.
@@ -1132,14 +1124,11 @@ If a confirmation task is marked DONE, update its parent's
               (goto-char (marker-position location))
               (org-entry-put (point) "Confirmed_External" "yes")
               (message "Parent task ID %s confirmed." parent-id))))))))
-
 ;; ==============================================================================
 ;; LIFEOS: SESSION-BASED ARCHITECTURE (v6.0 - Thrust 3.A)
 ;; ==============================================================================
-
-(defconst life-os--session-counter-file (expand-file-name ".system/session.org" "~/journal/")
+(defconst life-os--session-counter-file (expand-file-name ".system/session.org" "~/journal/") ; TODO: Use lifeos-system-dir and lifeos-journal-root
   "The canonical file path for the persistent session counter.")
-
 (defun life-os--get-session-counter ()
   "Read the current session counter from its canonical file.
 Returns 0 if the file does not exist or contains invalid data."
@@ -1148,7 +1137,6 @@ Returns 0 if the file does not exist or contains invalid data."
         (insert-file-contents-literally life-os--session-counter-file)
         (condition-case nil (string-to-number (buffer-string)) ('error 0)))
     0))
-
 (defun life-os--increment-and-get-session-counter ()
   "Increment the session counter by one, save it, and return the new value."
   (let ((new-count (1+ (life-os--get-session-counter))))
@@ -1157,7 +1145,6 @@ Returns 0 if the file does not exist or contains invalid data."
       (insert (number-to-string new-count))
       (write-file life-os--session-counter-file nil))
     new-count))
-
 (defun life-os-begin-new-session ()
   "Initialize a new session log, inject habits, and open the file."
   (interactive)
@@ -1166,16 +1153,23 @@ Returns 0 if the file does not exist or contains invalid data."
     (make-directory (file-name-directory session-path) t)
     ;; 1. Create the base session file
     (with-temp-buffer
-      (insert (format "#+TITLE: Session %03d: [%s]\n\n" session-number (format-time-string "%Y-%m-%d")))
-      (insert ":PROPERTIES:\n:END:\n\n")
-      (insert "* Waking Thoughts\n\n* 24h Outlook\n\n* Metrics Checklist\n\n* Inbox / Fleeting Notes\n\n* Closing Thoughts\n")
+      (insert (format "#+TITLE: Session %03d: [%s]
+" session-number (format-time-string "%Y-%m-%d")))
+      (insert ":PROPERTIES:
+:END:
+")
+      (insert "* Waking Thoughts
+* 24h Outlook
+* Metrics Checklist
+* Inbox / Fleeting Notes
+* Closing Thoughts
+")
       (write-file session-path))
     ;; 2. Inject habit templates
     (life-os--inject-habit-templates session-path)
     ;; 3. Open the file for the user
     (find-file session-path)
     (message "Began Session %03d with daily habits." session-number)))
-
 (defun life-os--get-active-log-file ()
   "Return the file path of the current log.
 Prioritizes the most recent session log. If none exists, falls
@@ -1186,7 +1180,6 @@ back to today's Daily Command Center (DCC) file."
     (if session-files
         (car (sort session-files #'string-greaterp))
       (life-os--generate-dcc-path))))
-
 (defun life-os-end-session-review ()
   "Finalize the current session by collecting and saving key metrics."
   (interactive)
@@ -1211,25 +1204,22 @@ back to today's Daily Command Center (DCC) file."
         (org-entry-put (point) "LifeOS_Hours" lifeos)
         (save-buffer))
       (message "Session finalized and metrics recorded in %s" (file-name-nondirectory active-log)))))
-
 ;; ==============================================================================
 ;; LIFEOS: AI DAILY BRIEFING ENGINE (v6.1 - Thrust 3.B)
 ;; ==============================================================================
-
 (defun life-os--get-global-task-horizon ()
   "Query and return a string list of all non-DONE tasks."
   (let* ((tasks (org-ql-select (org-agenda-files) '(not (done))
-                  :action (lambda () (format "- %s\n" (org-get-heading t t)))))
+                  :action (lambda () (format "- %s
+" (org-get-heading t t)))))
          (task-string (if tasks (mapconcat #'identity tasks "") "No pending tasks found.")))
     task-string))
-
 (defun life-os--get-latest-session-log ()
   "Return the file path of the most recently completed session log."
   (let* ((session-dir (expand-file-name "sessions/" lifeos-logs-dir))
          (session-files (directory-files session-dir t "Session-\\(.*\\)\\.org$")))
     (when session-files
       (car (sort session-files #'string-greaterp)))))
-
 (defun life-os-generate-daily-plan ()
   "Non-interactively generate today's Daily Command Center (DCC) file.
 This function is intended to be called automatically by a system timer."
@@ -1246,7 +1236,7 @@ This function is intended to be called automatically by a system timer."
          (cycle-outlook (life-os--get-cycle-outlook-content))
          (task-horizon (life-os--get-global-task-horizon))
          (todays-numerology (life-os--get-numerology-block-for-date (format-time-string "%Y-%m-%d")))
-         (prompt-template (life-os-read-prompt (expand-file-name "5_Daily_Gen.org" "~/journal/.prompts/")))
+         (prompt-template (life-os-read-prompt (expand-file-name "5_Daily_Gen.org" "~/journal/.prompts/"))) ; TODO: Use lifeos-prompts-dir
          ;; --- 2. Assemble the Final Prompt ---
          (final-prompt prompt-template))
     (setq final-prompt (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_ANNUAL_CODEX]") annual-codex final-prompt t t))
@@ -1254,7 +1244,6 @@ This function is intended to be called automatically by a system timer."
     (setq final-prompt (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_LAST_SESSION_LOG]") last-session-content final-prompt t t))
     (setq final-prompt (replace-regexp-in-string (regexp-quote "[GLOBAL_TASK_HORIZON_DATA]") task-horizon final-prompt t t))
     (setq final-prompt (replace-regexp-in-string (regexp-quote "[TODAYS_ENERGETIC_MATRIX]") todays-numerology final-prompt t t))
-
     ;; --- 3. Call AI and Write to File ---
     (message "Sending briefing request to AI...")
     (let ((ai-response (life-os-extract-text-from-ai-response (life-os-call-ai final-prompt 'pro))))
@@ -1265,33 +1254,34 @@ This function is intended to be called automatically by a system timer."
           (insert ai-response)
           (write-file dcc-path nil))
         (message "LifeOS: Successfully generated and saved today's DCC to %s" dcc-path)))))
-
 (defun life-os--append-to-active-log-inbox (content-string)
   "Appends CONTENT-STRING to the Inbox section of the active log file."
   (let ((target-path (life-os--get-active-log-file)))
     (unless (file-exists-p target-path)
       ;; Create a placeholder if the DCC/Session file does not exist yet.
       (with-temp-buffer
-        (insert (format "#+TITLE: %s Placeholder\n\n* Inbox / Fleeting Notes\n" (file-name-base target-path)))
+        (insert (format "#+TITLE: %s Placeholder
+* Inbox / Fleeting Notes
+" (file-name-base target-path)))
         (write-file target-path)))
-
     (with-temp-buffer
       (insert-file-contents target-path)
       (goto-char (point-min))
       (if (re-search-forward "^\\* Inbox / Fleeting Notes" nil t)
           (progn
             (goto-char (line-end-position))
-            (unless (bolp) (insert "\n"))
+            (unless (bolp) (insert "
+"))
             (insert content-string))
         (progn ; Fallback if heading doesn't exist
           (goto-char (point-max))
-          (insert "\n\n* Inbox / Fleeting Notes\n")
+          (insert "
+* Inbox / Fleeting Notes
+")
           (insert content-string)))
       (write-file target-path))))
-
-(defconst life-os--habit-template-file (expand-file-name "templates/habits.org" "~/journal/")
+(defconst life-os--habit-template-file (expand-file-name "templates/habits.org" "~/journal/") ; TODO: Make configurable or use lifeos-system-dir?
   "Canonical path to the file containing master habit templates.")
-
 (defun life-os--inject-habit-templates (target-session-file)
   "Injects habit checklists from the template file into a new session log."
   (when (file-exists-p life-os--habit-template-file)
@@ -1303,9 +1293,10 @@ This function is intended to be called automatically by a system timer."
         (with-current-buffer (find-file-noselect target-session-file)
           (goto-char (point-min))
           (when (re-search-forward "^\\* Metrics Checklist" nil t)
-            (goto-char (line-end-position)) (insert "\n")
+            (goto-char (line-end-position)) (insert "
+")
             (dolist (habit-text habits)
-              (insert habit-text "\n")))
+              (insert habit-text "
+")))
           (save-buffer))))))
-
 (provide 'lifeos)
