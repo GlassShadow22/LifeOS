@@ -233,9 +233,11 @@ convention."
         (message "LifeOS Context Warning: No recent tactical outlook found.")
         ""))))
 (defun life-os--get-intra-month-cycle-date-range (target-date-obj)
-  "Calculate the 9-day intra-month cycle ending on the last PD9 before TARGET-DATE-OBJ.
-Returns an alist with :start-date-str and :end-date-str."
-  (let* ((end-date-obj (life-os--find-last-pd-cycle-end 9))
+  "Calculate the 9-day intra-month cycle ending on the last PD9.
+The cycle ends on the most recent Personal Day 9 relative to
+TARGET-DATE-OBJ. Returns an alist with :start-date-str and
+:end-date-str."
+  (let* ((end-date-obj (life-os--find-last-pd-cycle-end 9 target-date-obj))
          (start-date-obj (time-subtract end-date-obj (days-to-time 8))))
     `((:start-date-str . ,(format-time-string "%Y-%m-%d" start-date-obj))
       (:end-date-str . ,(format-time-string "%Y-%m-%d" end-date-obj)))))
@@ -411,10 +413,10 @@ formatted string block."
 - Sauna Session (Previous Day): %s
 - Cold Plunge (Previous Day): %s"
      energy focus mood sleep weight keto sauna plunge)))
-(defun life-os--find-last-pd-cycle-end (pd-num)
+(defun life-os--find-last-pd-cycle-end (pd-num &optional start-date)
   "Find the most recent date that was the given Personal Day PD-NUM.
-Searches backwards up to 30 days."
-  (let ((counter 0) (found-date nil) (search-date (current-time)))
+Searches backwards from START-DATE (or today) for up to 30 days."
+  (let ((counter 0) (found-date nil) (search-date (or start-date (current-time))))
     (while (and (not found-date) (< counter 30))
       (let* ((date-str (format-time-string "%Y-%m-%d" search-date))
              (numerology (life-os-calculate-numerology-for-date date-str))
@@ -423,7 +425,6 @@ Searches backwards up to 30 days."
           (setq found-date search-date)))
       (setq search-date (time-subtract search-date (days-to-time 1)))
       (setq counter (1+ counter)))
-    ;; Return the date object or throw an error if not found.
     (or found-date (error "LifeOS Error: Could not find a PD %d in the last 30 days." pd-num))))
 (defun life-os--get-previous-month-date-range (target-date-obj)
   "Calculate the start and end dates of the month prior to TARGET-DATE-OBJ.
@@ -801,27 +802,15 @@ activates the local scheduler keymap."
   (goto-char (point-min))
   (forward-line 3)) ; Use forward-line instead of next-line
 (defun life-os-launch-scheduler-dynamic (&optional context-tags)
-  "Launch the dynamic Org capture scheduling UI.
-This function programmatically creates a temporary capture template
-that uses `life-os--scheduler-capture-template` to render an
-interactive buffer. It launches a blocking `org-capture` session
-and, upon successful finalization, returns the data alist
-associated with the user's selection. Returns nil if cancelled.
-The optional CONTEXT-TAGS argument is a placeholder for future
-enhancements to generate context-aware suggestions."
+  "Launch the dynamic Org capture scheduling UI."
   (interactive)
-  (declare (ignore context-tags)) ; Add declare ignore for unused argument
-  ;; The let-binding creates a temporary, lexical scope for
-  ;; `org-capture-templates`, ensuring the global configuration is
-  ;; not affected.
+  (declare (ignore context-tags)) ; Correct placement
   (let ((org-capture-templates
          `(("s" "Scheduler" plain ""
             :function life-os--scheduler-capture-template
             :immediate-finish nil
             :kill-buffer t))))
     (org-capture nil "s")
-    ;; `life-os--scheduler-finalize-selection` places the result in
-    ;; the plist under this key before finalizing.
     (plist-get org-capture-plist :life-os-scheduler-selection)))
 (defun life-os--quick-capture-action (state priority)
   "Backend for Quick Capture. Captures a task with STATE and PRIORITY.
@@ -921,13 +910,11 @@ This function gathers full metadata but does not perform scheduling."
          (original-point (point-marker)))
     (if (string-empty-p clean-text)
         (user-error "Cannot promote an empty line.")
-      ;; Redefine `read-string` locally for this one call to pre-fill the prompt.
       (cl-letf (((symbol-function 'read-string)
-                 (lambda (prompt &optional initial-input history &rest _) ; Arguments defined here
-                   (declare (ignore initial-input history _)) ; Add declare ignore for unused lambda arguments
+                 (lambda (prompt &optional initial-input history &rest _)
+                   (declare (ignore initial-input history _)) ; Correct placement inside lambda
                    (funcall #'read-from-minibuffer prompt clean-text))))
         (call-interactively #'life-os-interactive-capture))
-      ;; After the capture is fully complete, delete the original plain line.
       (with-current-buffer original-buffer
         (goto-char original-point)
         (delete-region (line-beginning-position) (line-end-position))))))
@@ -1066,55 +1053,6 @@ If FILES is nil, defaults to the global `org-agenda-files`."
     (when current-option (push current-option options))
     (nreverse options)))
 
-(defun life-os--commit-ai-schedule (&optional remaining-task-markers)
-  "Commit the user's selected schedule. To be called from the Action Review buffer.
-If REMAINING-TASK-MARKERS is provided, prompt to schedule the next one."
-  (interactive)
-  (let ((option-data (get-text-property (point) 'life-os-data))
-        (task-marker life-os--action-review-task-marker)) ; Use the buffer-local var
-    (when (and option-data task-marker)
-      (with-current-buffer (marker-buffer task-marker)
-        (goto-char (marker-position task-marker))
-        (let* ((original-element (org-element-at-point))
-               ;; Removed unused `original-title` variable
-               )
-          ;; --- Core Scheduling Logic (Unchanged) ---
-          (org-todo "AI-REC")
-          (let* ((type (alist-get :type option-data))
-                 (date-str (format "<%s>" (alist-get :date option-data)))) ; Extend scope of let*
-            (if (string= type "SCHEDULED")
-                (org-schedule nil date-str)
-              (org-deadline nil date-str))
-            (message "Task committed with AI recommendation.")
-            ;; --- [NEW] Child Task Creation Trigger ---
-            (let ((confirm-with (org-entry-get (point) "Confirm_With"))
-                  (parent-id (org-id-get-create)))
-              ;; Set default confirmed status if not present
-              (unless (org-entry-get (point) "Confirmed_External")
-                (org-entry-put (point) "Confirmed_External" "no"))
-              ;; Trigger child task creation
-              (when (and (string-match-p "\\bAPPT\\b" (org-element-property :raw-value original-element)) ; Use raw-value
-                         confirm-with)
-                (life-os--create-confirmation-child-task
-                 parent-id
-                 (org-get-heading t t)
-                 date-str
-                 confirm-with))))))
-      (kill-buffer "*LifeOS Action Review*")
-      ;; --- [NEW] Recursive Processing Prompt ---
-      (when remaining-task-markers
-        (let ((next-task-marker (car remaining-task-markers)))
-          (with-current-buffer (marker-buffer next-task-marker)
-             (goto-char (marker-position next-task-marker))
-             (let ((next-task-heading (org-get-heading t t)))
-               (when (and next-task-heading
-                          (y-or-n-p (format "Scheduled current task. Process next 'SCHEDULE-ME' task ('%s')? " next-task-heading)))
-                 ;; Call plan-my-schedule recursively with the remaining list
-                 (life-os-plan-my-schedule nil (cdr remaining-task-markers))))))))))
-  ;; Ensure buffer is killed even if not proceeding recursively
-  (when (get-buffer "*LifeOS Action Review*")
-    (kill-buffer "*LifeOS Action Review*"))
-
 (defun life-os-plan-my-schedule (&optional files remaining-task-markers)
   "Main entry point for AI-assisted scheduling, searchable over specific FILES.
 If REMAINING-TASK-MARKERS is provided, it's used instead of querying for tasks."
@@ -1156,7 +1094,7 @@ If REMAINING-TASK-MARKERS is provided, it's used instead of querying for tasks."
 ;; Add a helper variable definition (can be near other action review vars)
 ;; This variable will hold the list of remaining tasks in the action review buffer
 (defvar-local life-os--action-review-remaining-tasks nil
-  "Buffer-local variable to hold the list of remaining task markers for recursive scheduling.")
+  "Buffer-local list of remaining task markers for recursive scheduling.")
 
 (defun life-os--commit-ai-schedule ()
   "Commit the user's selected schedule. To be called from the Action Review buffer.
@@ -1261,10 +1199,9 @@ SCHEDULED-DATE-STR is an Org-style date string like `<YYYY-MM-DD ...>`."
 
 ;; This hook function will be added to the config.el file.
 (defun life-os--update-parent-on-confirmation (&rest _)
-  "Hook to run after a TODO state change.
-If a confirmation task is marked DONE, update its parent's
-:Confirmed_External: property."
-  (when (and (equal org-state "DONE") ; <-- CORRECTED: No parentheses around org-state
+  "Hook to run after a TODO state change. Confirms parent task."
+  (declare (special org-state)) ; Correct placement
+  (when (and (equal org-state "DONE")
              (string-match-p "Confirm Appt:" (org-get-heading t t)))
     (let ((parent-link (org-entry-get (point) "PARENT")))
       (when parent-link
