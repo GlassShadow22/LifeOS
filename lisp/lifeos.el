@@ -1148,7 +1148,7 @@ robustness."
              (let ((next-task-heading (org-get-heading t t)))
                (when (and next-task-heading
                           (y-or-n-p (format "Scheduled current task. Process next 'SCHEDULE-ME' task ('%s')? " next-task-heading)))
-                 (life-os-plan-my-schedule nil (cdr remaining-tasks))))))))))
+                 (life-os-plan-my-schedule nil (cdr remaining-tasks)))))))))))))
 ;; ==============================================================================
 ;; LIFEOS: HIERARCHICAL ACTION ENGINE (v5.3 - Thrust 2.C)
 ;; ==============================================================================
@@ -1304,50 +1304,6 @@ back to today's Daily Command Center (DCC) file."
          (session-files (directory-files session-dir t "Session-\\(.*\\)\\.org$")))
     (when session-files
       (car (sort session-files #'string-greaterp)))))
-
-(defun life-os-generate-daily-plan (&optional date-string)
-  "Non-interactively generate a Daily Command Center (DCC) file.
-Generates for DATE-STRING (YYYY-MM-DD) if provided, otherwise for today.
-Intended to be called automatically or for historical data generation."
-  (interactive
-   (list (read-string "Generate DCC for date (YYYY-MM-DD) [optional, defaults to today]: ")))
-  (let* ((target-time (if (and date-string (not (string-empty-p date-string)))
-                          (org-time-string-to-time date-string)
-                        (current-time)))
-         (target-date-str (format-time-string "%Y-%m-%d" target-time)))
-    (message "LifeOS: Beginning DCC generation for %s..." target-date-str)
-    (let* ((dcc-path (life-os--generate-dcc-path target-time))
-           (dcc-year (format-time-string "%Y" target-time))
-           ;; --- 1. Gather All Contextual Data ---
-           ;; Note: These functions find the *most recent* data relative to now, which
-           ;; is the correct behavior for simulating a historical run. The AI's job
-           ;; is to synthesize the state *as it was then*.
-           (last-session-path (life-os--get-latest-session-log))
-           (last-session-content (if last-session-path
-                                     (with-temp-buffer (insert-file-contents-literally last-session-path) (buffer-string))
-                                   "No previous session data available."))
-           (annual-codex (life-os--get-annual-codex-content dcc-year))
-           (cycle-outlook (life-os--get-cycle-outlook-content target-time)) ;; Pass time for recency check
-           (task-horizon (life-os--get-global-task-horizon))
-           (todays-numerology (life-os--get-numerology-block-for-date target-date-str))
-           (prompt-template (life-os-read-prompt (expand-file-name "5_Daily_Gen.org" lifeos-prompts-dir)))
-           ;; --- 2. Assemble the Final Prompt ---
-           (final-prompt prompt-template))
-      (setq final-prompt (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_ANNUAL_CODEX]") (or annual-codex "") final-prompt t t))
-      (setq final-prompt (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_9_DAY_CYCLE_OUTLOOK_BLOCK]") (or cycle-outlook "") final-prompt t t))
-      (setq final-prompt (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_LAST_SESSION_LOG]") last-session-content final-prompt t t))
-      (setq final-prompt (replace-regexp-in-string (regexp-quote "[GLOBAL_TASK_HORIZON_DATA]") task-horizon final-prompt t t))
-      (setq final-prompt (replace-regexp-in-string (regexp-quote "[TODAYS_ENERGETIC_MATRIX]") todays-numerology final-prompt t t))
-      ;; --- 3. Call AI and Write to File ---
-      (message "Sending briefing request to AI for %s..." target-date-str)
-      (let ((ai-response (life-os-extract-text-from-ai-response (life-os-call-ai final-prompt 'pro))))
-        (if (string-empty-p ai-response)
-            (error "LifeOS Error: Received empty response from AI for daily plan.")
-          (make-directory (file-name-directory dcc-path) t)
-          (with-temp-buffer
-            (insert ai-response)
-            (write-file dcc-path nil))
-          (message "LifeOS: Successfully generated and saved DCC for %s to %s" target-date-str dcc-path))))))
 
 (defun life-os--append-to-active-log-inbox (content-string)
   "Appends CONTENT-STRING to the Inbox section of the active log file."
@@ -1969,5 +1925,105 @@ It then executes the refile and state change as an atomic operation."
       (when (member "ConfirmMe" (org-get-tags))
         (life-os-create-confirmation-child-task))
       (message "Item triaged to %s with state [%s]." (or (cadr rfloc) (car rfloc)) new-state))))
+
+;; --- Group 5: The Socratic Loop Engine (The Daily Packet Generators) v7.3 ---
+
+;; --- Part A: The Tactical Auditor (Full-Progress.org) ---
+;; (Ref: Spec-5B)
+
+(defun life-os--get-previous-snapshot-path ()
+  "Get the canonical path for yesterday's Full-Progress snapshot."
+  (expand-file-name (format "%s-Full-Progress.org" (format-time-string "%Y-%m-%d" (time-subtract (current-time) (days-to-time 1))))
+                    lifeos-system-dir))
+
+(defun life-os--get-live-task-snapshot (files)
+  "Query all agenda files and return a hash table of all non-terminal tasks.
+Key: Org ID, Value: alist of (:state, :headline, :file)."
+  (let ((task-ht (make-hash-table :test 'equal)))
+    (dolist (entry (org-ql-select files '(not (or (done) (todo "KILL")))))
+      (with-current-buffer (marker-buffer entry)
+        (goto-char (marker-position entry))
+        (let ((id (org-id-get-create))
+              (state (org-get-todo-state))
+              (headline (org-get-heading t t))
+              (file (buffer-file-name)))
+          (puthash id `((:state . ,state) (:headline . ,headline) (:file . ,file)) task-ht))))
+    task-ht))
+
+(defun life-os-generate-full-progress-snapshot ()
+  "Generate the Full-Progress.org snapshot for today. (Spec-5B)"
+  (interactive)
+  (let* ((output-path (expand-file-name (format "%s-Full-Progress.org" (format-time-string "%Y-%m-%d")) lifeos-system-dir))
+         (prev-snapshot-path (life-os--get-previous-snapshot-path))
+         (live-tasks-ht (life-os--get-live-task-snapshot (org-agenda-files)))
+         (prev-tasks-ht (if (file-exists-p prev-snapshot-path) (life-os--load-previous-state prev-snapshot-path) (make-hash-table :test 'equal)))
+         (metrics (let ((counts (make-hash-table :test 'equal)))
+                    (maphash (lambda (id data) (let* ((state (alist-get :state data))
+                                                      (key (intern state)))
+                                                 (puthash key (1+ (gethash key counts 0)) counts))) live-tasks-ht)
+                    counts)))
+    (with-temp-buffer
+      ;; Header
+      (insert (format "#+TITLE: Full Progress Snapshot for %s\n" (format-time-string "%Y-%m-%d")))
+      ;; Metrics
+      (insert "* System-Wide Metrics\n:PROPERTIES:\n")
+      (insert (format ":TASKS_TOTAL: %d\n" (hash-table-count live-tasks-ht)))
+      (maphash (lambda (k v) (insert (format ":TASKS_%s: %d\n" (symbol-name k) v))) metrics)
+      (insert ":END:\n\n")
+      ;; Diff
+      (insert (format "* Diff from %s\n" (format-time-string "%Y-%m-%d" (time-subtract (current-time) (days-to-time 1)))))
+      (maphash (lambda (id data) (unless (gethash id prev-tasks-ht) (insert (format "- New Task: [[id:%s]] in %s\n" id (file-name-nondirectory (alist-get :file data)))))) live-tasks-ht)
+      (maphash (lambda (id prev-data) (unless (gethash id live-tasks-ht) (insert (format "- Completed: [[id:%s]] (%s)\n" id (alist-get :state prev-data))))) prev-tasks-ht)
+      (maphash (lambda (id data) (let ((prev-data (gethash id prev-tasks-ht))) (when (and prev-data (not (equal (alist-get :state data) (alist-get :state prev-data)))) (insert (format "- State Change: [[id:%s]] (%s -> %s)\n" id (alist-get :state prev-data) (alist-get :state data)))))) live-tasks-ht)
+      ;; Live State Sections
+      (dolist (state '("IMPL" "THNK" "NEXT" "HOLD"))
+        (let ((tasks-in-state (cl-loop for id being the hash-keys of live-tasks-ht using (hash-value data) when (equal (alist-get :state data) state) collect (cons id data))))
+          (when tasks-in-state
+            (insert (format "\n* Active Items (:STATE \"%s\")\n" state))
+            (dolist (task-entry tasks-in-state)
+              (insert (format "- %s: [[id:%s]] %s\n" (alist-get :state (cdr task-entry)) (car task-entry) (alist-get :headline (cdr task-entry))))))))
+      ;; Write file
+      (write-file output-path)
+      (message "Full-Progress snapshot generated at: %s" output-path))))
+
+(defun life-os--load-previous-state (file)
+  "Helper to parse a previous Full-Progress file into a hash-table."
+  (let ((ht (make-hash-table :test 'equal)))
+    (with-temp-buffer
+      (insert-file-contents file)
+      (goto-char (point-min))
+      (while (re-search-forward org-id-link-re nil t)
+        (let ((id (match-string 1)) (p (point)))
+          (goto-char (line-beginning-position))
+          (when (re-search-forward "^- \\([A-Z]+\\):" (line-end-position) t)
+            (puthash id `((:state . ,(match-string 1))) ht))
+          (goto-char p))))
+    ht))
+
+;; --- Part B: The Energetic Auditor (DCC.org) ---
+
+(defun life-os-generate-dcc ()
+  "Generate the Daily Command Center (DCC.org) for today.
+This function is a pure AI orchestrator, focused on numerology."
+  (interactive)
+  (let* ((today-str (format-time-string "%Y-%m-%d"))
+         (dcc-path (expand-file-name (format "%s.org" today-str) lifeos-logs-dir)) ; Use logs dir as per spec
+         (prev-dcc-path (expand-file-name (format "%s.org" (format-time-string "%Y-%m-%d" (time-subtract (current-time) (days-to-time 1)))) lifeos-logs-dir))
+         (prev-dcc-content (if (file-exists-p prev-dcc-path) (with-temp-buffer (insert-file-contents prev-dcc-path) (buffer-string)) "No previous DCC available."))
+         (numerology-data (life-os-calculate-numerology-for-date today-str))
+         (numerology-matrix (with-temp-buffer (dolist (item numerology-data) (insert (format "- %s: %s\n" (car item) (cdr item)))) (buffer-string)))
+         (tomorrow-pd (alist-get 'personal-day (life-os-calculate-numerology-for-date (format-time-string "%Y-%m-%d" (time-add (current-time) (days-to-time 1))))))
+         (prompt (life-os-read-prompt (expand-file-name "5-DCC-Gen.org.txt" lifeos-prompts-dir)))
+         (final-prompt (-> prompt
+                           (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_PREVIOUS_DCC]") prev-dcc-content)
+                           (replace-regexp-in-string (regexp-quote "[TODAYS_ENERGETIC_MATRIX]") numerology-matrix)
+                           (replace-regexp-in-string (regexp-quote "[TOMORROWS_PERSONAL_DAY]") (number-to-string tomorrow-pd)))))
+    (message "Generating DCC for %s..." today-str)
+    (let ((response (life-os-extract-text-from-ai-response (life-os-call-ai final-prompt))))
+      (make-directory (file-name-directory dcc-path) t)
+      (with-temp-buffer
+        (insert response)
+        (write-file dcc-path))
+      (message "DCC successfully generated at %s" dcc-path))))
 
 (provide 'lifeos)
