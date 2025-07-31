@@ -29,12 +29,12 @@ Your task is to generate a comprehensive **Monthly Debrief Questionnaire** for t
 
 ## Input D: Numerological Context for Debriefed Month
 
-- **User Profile:** [USER_FULL_NAME]
-- **Date of Birth:** [USER_DOB]
-- **Month Being Debriefed:** [MONTH_NAME_DEBRIEFED_MONTH] [YEAR_DEBRIEFED_MONTH]
-- **Personal Year (for Debriefed Month):** [PERSONAL_YEAR_FOR_DEBRIEFED_MONTH]
-- **Personal Month (for Debriefed Month):** [PERSONAL_MONTH_FOR_DEBRIEFED_MONTH]
-- **Annual Essence (for Debriefed Month):** [ANNUAL_ESSENCE_FOR_DEBRIEFED_MONTH]
+- User Profile: [USER_FULL_NAME]
+- Date of Birth: [USER_DOB]
+- Month Being Debriefed: [MONTH_NAME_DEBRIEFED_MONTH] [YEAR_DEBRIEFED_MONTH]
+- Personal Year (for Debriefed Month): [PERSONAL_YEAR_FOR_DEBRIEFED_MONTH]
+- Personal Month (for Debriefed Month): [PERSONAL_MONTH_FOR_DEBRIEFED_MONTH]
+- Annual Essence (for Debriefed Month): [ANNUAL_ESSENCE_FOR_DEBRIEFED_MONTH]
 
 # OUTPUT STRUCTURE & REQUIREMENTS
 

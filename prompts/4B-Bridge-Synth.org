@@ -35,10 +35,10 @@ Your task is to synthesize all provided information to author the complete and f
 
 ## Input F: Numerological Context for the Upcoming Cycle
 
-- **Cycle Type:** Bridge Cycle
-- **Start Date of New Cycle:** [START_DATE_OF_NEXT_CYCLE_YYYY-MM-DD]
-- **End Date of New Cycle (first PD9 of new month):** [END_DATE_OF_NEXT_CYCLE_YYYY-MM-DD]
-- **Numerological Flow:** [Outgoing PM] -> [Incoming PM] | [Outgoing PDs] -> [Incoming PDs]
+- Cycle Type: Bridge Cycle
+- Start Date of New Cycle: [START_DATE_OF_NEXT_CYCLE_YYYY-MM-DD]
+- End Date of New Cycle (first PD9 of new month): [END_DATE_OF_NEXT_CYCLE_YYYY-MM-DD]
+- Numerological Flow: [Outgoing PM] -> [Incoming PM] | [Outgoing PDs] -> [Incoming PDs]
 
 # OUTPUT STRUCTURE & REQUIREMENTS
 

@@ -15,14 +15,14 @@ You will construct this document by performing a **two-phase content assembly**:
 
 ## Input A: Core Numerological Context
 
-- **User Profile:** [USER_FULL_NAME]
-- **Date of Birth:** [USER_DOB]
-- **Target Year:** [TARGET_YEAR_YYYY]
-- **Core Energetic Matrix for Target Year:**
-  - **Life Path:** [LIFE_PATH_NUMBER] ([LIFE_PATH_ARCHETYPE_AND_TRAITS])
-  - **Personal Year:** [PERSONAL_YEAR_NUMBER] ([PERSONAL_YEAR_ARCHETYPE_AND_TRAITS])
-  - **Annual Essence:** [ANNUAL_ESSENCE_NUMBER] ([ANNUAL_ESSENCE_ARCHETYPE_AND_TRAITS])
-- **Primary Archetype for Target Year:** The "[PRIMARY_YEARLY_ARCHETYPE]"
+- User Profile: [USER_FULL_NAME]
+- Date of Birth: [USER_DOB]
+- Target Year: [TARGET_YEAR_YYYY]
+- Core Energetic Matrix for Target Year:
+  - Life Path: [LIFE_PATH_NUMBER] ([LIFE_PATH_ARCHETYPE_AND_TRAITS])
+  - Personal Year: [PERSONAL_YEAR_NUMBER] ([PERSONAL_YEAR_ARCHETYPE_AND_TRAITS])
+  - Annual Essence: [ANNUAL_ESSENCE_NUMBER] ([ANNUAL_ESSENCE_ARCHETYPE_AND_TRAITS])
+- Primary Archetype for Target Year: The "[PRIMARY_YEARLY_ARCHETYPE]"
 
 ## Input C: User's Completed Vision Worksheet (Dynamic - From Prompt A Answers)
 

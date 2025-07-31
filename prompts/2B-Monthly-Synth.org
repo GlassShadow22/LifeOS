@@ -30,12 +30,12 @@ Your task is to author the **complete and final text** for the client's **Operat
 
 ## Input E: Numerological Context for Upcoming Month
 
-- **User Profile:** [USER_FULL_NAME]
-- **Date of Birth:** [USER_DOB]
-- **Month Being Planned:** [MONTH_NAME_UPCOMING_MONTH] [YEAR_UPCOMING_MONTH]
-- **Personal Year (for Upcoming Month):** [PERSONAL_YEAR_FOR_UPCOMING_MONTH]
-- **Personal Month (for Upcoming Month):** [PERSONAL_MONTH_FOR_UPCOMING_MONTH]
-- **Annual Essence (for Upcoming Month):** [ANNUAL_ESSENCE_FOR_UPCOMING_MONTH]
+- User Profile: [USER_FULL_NAME]
+- Date of Birth: [USER_DOB]
+- Month Being Planned: [MONTH_NAME_UPCOMING_MONTH] [YEAR_UPCOMING_MONTH]
+- Personal Year (for Upcoming Month): [PERSONAL_YEAR_FOR_UPCOMING_MONTH]
+- Personal Month (for Upcoming Month): [PERSONAL_MONTH_FOR_UPCOMING_MONTH]
+- Annual Essence (for Upcoming Month): [ANNUAL_ESSENCE_FOR_UPCOMING_MONTH]
 
 # OUTPUT STRUCTURE & REQUIREMENTS
 
