@@ -2026,4 +2026,57 @@ This function is a pure AI orchestrator, focused on numerology."
         (write-file dcc-path))
       (message "DCC successfully generated at %s" dcc-path))))
 
+;; --- Part C: The Socratic Coach (Worksheet.org) ---
+
+(defun life-os--get-todays-waking-thoughts ()
+  "Find today's active Session-Log and extract the content of '* Waking Thoughts'."
+  (let* ((active-log (life-os--get-active-log-file)))
+    (if (not active-log)
+        "No active session log found."
+      (with-temp-buffer
+        (insert-file-contents active-log)
+        (goto-char (point-min))
+        (if (re-search-forward "^\\* Waking Thoughts" nil t)
+            (let* ((beg (point))
+                   (end (save-excursion (re-search-forward "^\\* " nil t) (match-beginning 0))))
+              (buffer-substring-no-properties beg (or end (point-max))))
+          "No '* Waking Thoughts' section found in today's session log.")))))
+
+(defun life-os-generate-worksheet ()
+  "Generate the Socratic Worksheet for today. (Handoff 9)"
+  (interactive)
+  (let* ((today-str (format-time-string "%Y-%m-%d"))
+         ;; Path definitions
+         (worksheet-path (expand-file-name (format "%s-Worksheet.org" today-str) lifeos-worksheets-dir))
+         (fp-path (expand-file-name (format "%s-Full-Progress.org" today-str) lifeos-system-dir))
+         (dcc-path (expand-file-name (format "%s.org" today-str) lifeos-logs-dir))
+         ;; Get content
+         (fp-content (if (file-exists-p fp-path) (with-temp-buffer (insert-file-contents fp-path) (buffer-string)) "Full-Progress snapshot not found for today."))
+         (dcc-content (if (file-exists-p dcc-path) (with-temp-buffer (insert-file-contents dcc-path) (buffer-string)) "DCC not found for today."))
+         (waking-thoughts (life-os--get-todays-waking-thoughts))
+         ;; --- Context-aware Strategy Ingestion ---
+         ;; This is a critical piece of logic. We check for active higher-level directives.
+         (codex-content (life-os--get-annual-codex-content (format-time-string "%Y")))
+         (monthly-directive-content (life-os--get-monthly-directive-content (format-time-string "%Y") (format-time-string "%m")))
+         (cycle-outlook-content (life-os--get-cycle-outlook-content)) ; Finds most recent
+         ;; Prepare Prompt
+         (prompt (life-os-read-prompt (expand-file-name "6-Worksheet-Gen.org.txt" lifeos-prompts-dir))) ; Using old filename temporarily
+         (final-prompt (-> prompt
+                           (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_FULL_PROGRESS_SNAPSHOT]") fp-content)
+                           (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_DCC]") dcc-content)
+                           (replace-regexp-in-string (regexp-quote "[USERS_WAKING_THOUGHTS]") waking-thoughts)
+                           ;; Optional context injection
+                           (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_ANNUAL_CODEX]") (or codex-content ""))
+                           (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_ACTIVE_MONTHLY_DIRECTIVE]") (or monthly-directive-content ""))
+                           (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_ACTIVE_CYCLE_OUTLOOK]") (or cycle-outlook-content "")))))
+
+    (message "Generating Socratic Worksheet...")
+    (let ((response (life-os-extract-text-from-ai-response (life-os-call-ai final-prompt))))
+      (make-directory (file-name-directory worksheet-path) t)
+      (with-temp-buffer
+        (insert response)
+        (write-file worksheet-path))
+      (message "Worksheet generated. Opening for review.")
+      (find-file worksheet-path))))
+
 (provide 'lifeos)
