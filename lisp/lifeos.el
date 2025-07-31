@@ -957,11 +957,13 @@ This function gathers full metadata but does not perform scheduling."
   "Buffer-local variable to hold the marker for the task being reviewed.")
 
 (defun life-os--get-tasks-to-schedule (&optional files)
-  "Find `SCHEDULE-ME` tasks in FILES and return them as a list of markers.
+  "Find tasks in FILES with the `:ScheduleMe:' tag and return them as a list of markers.
+This v7.3 implementation is triggered by a tag, not a TODO state.
 If FILES is nil, defaults to the global `org-agenda-files`."
   (interactive)
-  (org-ql-select (or files (org-agenda-files)) '(todo "SCHEDULE-ME")
-    :action (lambda () (copy-marker (point))))) ; Return markers, not elements
+  (org-ql-select (or files (org-agenda-files))
+      '(tags "ScheduleMe")
+    :action (lambda () (copy-marker (point)))))
 
 (defun life-os--get-agenda-view-for-next-n-days (days files)
   "Return a string of agenda entries for DAYS from specific FILES."
@@ -1137,15 +1139,6 @@ robustness."
             (unless (org-entry-get (point) "Confirmed_External")
               (org-entry-put (point) "Confirmed_External" "no"))
 
-            ;; --- Final check with guaranteed-valid data ---
-            (when (and has-appt-tag confirm-with parent-id)
-              (message "L-OS INFO: Action Engine triggered for task '%s'." original-title)
-              (life-os--create-confirmation-child-task
-               parent-id
-               original-title
-               date-str
-               confirm-with)))))
-
       ;; --- Recursive processing logic (unchanged) ---
       (kill-buffer "*LifeOS Action Review*")
       (when remaining-tasks
@@ -1166,30 +1159,34 @@ SCHEDULED-DATE-STR is an Org-style date string like `<YYYY-MM-DD ...>`."
          (deadline-obj (time-subtract time-obj (days-to-time 2))))
     (format-time-string "<%Y-%m-%d %a>" deadline-obj)))
 
-(defun life-os--create-confirmation-child-task (parent-id parent-title scheduled-date-str confirm-with)
-  "Programmatically create and save a confirmation child task."
-  (let* ((id (org-id-new))
-         (deadline (life-os--calculate-confirmation-deadline scheduled-date-str))
-         (child-title (format "Confirm Appt: %s with %s" parent-title confirm-with))
-         (full-headline
-          (with-temp-buffer
-            (insert (format "* NEXT [#A] %s :Calls:Admin:
-" child-title))
-            (insert "  :PROPERTIES:
-")
-            (insert (format "  :DEADLINE:   %s
-" deadline))
-            (insert (format "  :PARENT:     [[id:%s]]
-" parent-id))
-            (insert (format "  :ID:         %s
-" id))
-            (insert "  :END:
-")
-            (buffer-string)))
-         (pointer (format "- NEXT [#A] %s [[id:%s]]" child-title id)))
-    (when (life-os--append-to-inbox-and-save full-headline)
-      (life-os--append-to-active-log-inbox pointer)
-      (message "Generated confirmation task for: %s" parent-title))))
+(defun life-os-create-confirmation-child-task ()
+  "Programmatically create a confirmation child task for the entry at point.
+This v7.3 version is a standalone command triggered by the presence
+of a `:ConfirmMe:' tag."
+  (interactive)
+  (when (org-at-heading-p)
+    (let* ((parent-id (org-id-get-create))
+           (parent-title (org-get-heading t t))
+           (confirm-with (org-entry-get (point) "Confirm_With"))
+           (scheduled-str (org-entry-get (point) "SCHEDULED"))
+           (deadline (if scheduled-str (life-os--calculate-confirmation-deadline scheduled-str) (format "<%s>" (format-time-string "%Y-%m-%d"))))
+           (child-title (format "Confirm Appt: %s with %s" parent-title (or confirm-with "contact")))
+           (id (org-id-new)))
+
+      (when (and parent-id parent-title confirm-with)
+        (let* ((full-headline
+                (with-temp-buffer
+                  (insert (format "* NEXT [#A] %s :Calls:Admin:\n" child-title))
+                  (insert "  :PROPERTIES:\n")
+                  (insert (format "  :DEADLINE:   %s\n" deadline))
+                  (insert (format "  :PARENT:     [[id:%s]]\n" parent-id))
+                  (insert (format "  :ID:         %s\n" id))
+                  (insert "  :END:\n")
+                  (buffer-string)))
+               (pointer (format "- NEXT [#A] %s [[id:%s]]" child-title id)))
+          (when (life-os--append-to-inbox-and-save full-headline)
+            (life-os--append-to-active-log-inbox pointer)
+            (message "Generated confirmation task for: %s" parent-title)))))))
 
 ;; This hook function will be added to the config.el file.
 (defun life-os--update-parent-on-confirmation (&rest _)
@@ -1968,6 +1965,9 @@ It then executes the refile and state change as an atomic operation."
       ;; --- 4. Execute Refile ---
       ;; Use a prefix arg to force running the hook even if state is same
       (org-refile 4)
+      ;; Post-triage, check for and run workflow triggers
+      (when (member "ConfirmMe" (org-get-tags))
+        (life-os-create-confirmation-child-task))
       (message "Item triaged to %s with state [%s]." (or (cadr rfloc) (car rfloc)) new-state))))
 
 (provide 'lifeos)
