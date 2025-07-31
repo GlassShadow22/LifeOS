@@ -1765,6 +1765,99 @@ This implements part of the Hierarchical Action Engine described in the Operatio
   (interactive)
   (life-os-generate-full-progress-snapshot))
 
+;; --- Socratic Loop Engine: Daily Context Canvas Generator ---
+
+(defun life-os--get-dcc-output-path (target-date-str)
+  "Determine the canonical file path for today's DCC."
+  (expand-file-name (format "%s-DCC.org" target-date-str) life-os-system-dir))
+
+(defun life-os--find-latest-full-progress ()
+  "Find the path of the most recent Full-Progress snapshot."
+  ;; Reuse logic from Full-Progress generator
+  (let* ((pattern (concat life-os-system-dir "/*-Full-Progress.org"))
+         (files (file-expand-wildcards pattern))
+         (sorted-files (sort files #'file-newer-than-file-p)))
+    (car sorted-files))) ; Return the newest one, or nil
+
+(defun life-os--parse-active-items-from-full-progress (fp-path)
+  "Extract the 'Active Items' sections from a Full-Progress file."
+  (let ((active-items-content ""))
+    (when (and fp-path (file-exists-p fp-path))
+      (with-temp-buffer
+        (insert-file-contents fp-path)
+        (goto-char (point-min))
+        ;; Search for the first "Active Items" section and capture everything until the next top-level heading or EOF
+        (when (re-search-forward "^\\* Active Items" nil t)
+          ;; Capture from point to either next * heading or end of buffer
+          (let ((start (point)))
+            (if (re-search-forward "^\\* " nil t)
+                ;; Found next heading, capture up to its beginning
+                (setq active-items-content (buffer-substring-no-properties start (match-beginning 0)))
+              ;; No next heading, capture to end of buffer
+              (setq active-items-content (buffer-substring-no-properties start (point-max))))))
+        ))
+    active-items-content))
+
+(defun life-os--get-todays-session-log-content (target-date-str)
+  "Retrieve the content of today's Session-Log.org file."
+  (let* ((log-file-path (expand-file-name (format "%s-Session-Log.org" target-date-str) life-os-logs-dir))
+         (log-content ""))
+    (when (file-exists-p log-file-path)
+      (with-temp-buffer
+        (insert-file-contents log-file-path)
+        (setq log-content (buffer-string))))
+    log-content))
+
+(defun life-os-generate-daily-context-canvas (&optional target-date-str)
+  "Generate the DCC.org for TARGET-DATE-STR (defaults to today).
+This function is part of the Socratic Loop Engine (Priority 3)."
+  (interactive)
+  (let* ((target-time (if (and target-date-str (not (string-empty-p target-date-str)))
+                          (org-time-string-to-time target-date-str)
+                        (current-time)))
+         (target-date-str (format-time-string "%Y-%m-%d" target-time))
+         (dcc-path (life-os--get-dcc-output-path target-date-str))
+         (latest-fp-path (life-os--find-latest-full-progress)) ; Should ideally be for target-date-str, or yesterday
+         (active-items-content (life-os--parse-active-items-from-full-progress latest-fp-path))
+         (session-log-content (life-os--get-todays-session-log-content target-date-str))
+         ;; Placeholder for numerology content
+         (numerology-content (format "* Numerological Outlook for %s\n(TODO: Integrate numerology data)\n\n" target-date-str))
+         )
+
+    (with-temp-file dcc-path
+      (insert (format "#+TITLE: Daily Context Canvas for %s\n" target-date-str))
+      (insert (format "#+DATE: %s\n\n" (format-time-string "[%Y-%m-%d %a %H:%M]")))
+
+      ;; Section 1: Active Items (from Full-Progress)
+      (insert "* Active Items Snapshot\n")
+      (insert ":PROPERTIES:\n:FROM: Full-Progress.org\n:END:\n")
+      (if (and latest-fp-path (not (string-empty-p active-items-content)))
+          (insert active-items-content "\n")
+        (insert "No recent active items data found.\n\n"))
+
+      ;; Section 2: Numerological Outlook (Placeholder)
+      (insert numerology-content)
+
+      ;; Section 3: Session Log Data
+      (insert "* Session Log Data\n")
+      (insert ":PROPERTIES:\n:FROM: Session-Log.org\n:END:\n")
+      (if (not (string-empty-p session-log-content))
+          (insert session-log-content "\n")
+        (insert "No session log data found for today.\n\n"))
+
+      ;; Final message
+      (goto-char (point-min))
+      )
+    (message "DCC generated at: %s" dcc-path)
+    t)) ; Return t on success
+
+;; Ensure the interactive command is available
+;;;###autoload
+(defun life-os-generate-daily-context-canvas-wrapper ()
+  "Wrapper to call `life-os-generate-daily-context-canvas' interactively."
+  (interactive)
+  (let ((date-str (read-string "Generate DCC for date (YYYY-MM-DD) [optional, defaults to today]: ")))
+    (life-os-generate-daily-context-canvas (if (string-empty-p date-str) nil date-str))))
 
 
 (provide 'lifeos)
