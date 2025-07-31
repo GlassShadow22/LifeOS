@@ -8,59 +8,62 @@
 ;; This file is part of the LifeOS v7.3 "Socratic Loop" implementation.
 ;;
 
-;;; Code:
+(after! hydra
+  ;; --- LifeOS v7.3 Hydra-Driven Capture (Refactored for Two-Stage Lifecycle) ---
 
-;; Ensure the logic layer is available (already loaded by config.el, but good for clarity if loaded directly)
-;; (require 'lifeos) ; Assumes lifeos.el is in load-path
+  (defvar lifeos--hydra-capture-type ""
+    "Buffer-local variable to hold the selected capture type (e.g., 'IDEA').")
+
+  (defhydra hydra-life-os-priority-chooser (:color blue :hint nil :foreign-keys run)
+    "
+   Capture Type: %(symbol-value 'lifeos--hydra-capture-type) | Select Priority
+   "
+    ("a" (life-os--quick-capture-action lifeos--hydra-capture-type "A") "#A Crisis" :exit t)
+    ("b" (life-os--quick-capture-action lifeos--hydra-capture-type "B") "#B High"   :exit t)
+    ("c" (life-os--quick-capture-action lifeos--hydra-capture-type "C") "#C Medium" :exit t)
+    ("d" (life-os--quick-capture-action lifeos--hydra-capture-type "D") "#D Low"    :exit t)
+    ("e" (life-os--quick-capture-action lifeos--hydra-capture-type "E") "#E Reward" :exit t)
+    ("q" nil "Quit" :color blue))
+
+  (defhydra hydra-life-os-capture-type-selector (:color blue :hint nil :foreign-keys run)
+    "
+   Select Capture Type
+   "
+    ("i" (progn (setq lifeos--hydra-capture-type "IDEA") (hydra-life-os-priority-chooser/body)) "Idea")
+    ("l" (progn (setq lifeos--hydra-capture-type "LINK") (hydra-life-os-priority-chooser/body)) "Link")
+    ("n" (progn (setq lifeos--hydra-capture-type "NOTE") (hydra-life-os-priority-chooser/body)) "Note")
+    ("t" (progn (setq lifeos--hydra-capture-type "TASK") (hydra-life-os-priority-chooser/body)) "Task")
+    ("q" nil "Quit" :color blue)))
 
 ;; --- Keybindings for LifeOS v7.3 (Socratic Loop & Core Functions) ---
-;; This uses Doom Emacs's `map!` macro for keybinding definitions.
-;; The prefix `SPC j` is designated for LifeOS Journal/Workflow commands.
-
 (map! :leader
-      :prefix ("j" . "LifeOS Journal/Workflow")
+      :prefix ("j" . "LifeOS")
 
-      ;; --- Terraforming & Core Triage (Priority 1) ---
-      :desc "Refile and Transition State" "r t" #'life-os-refile-and-transition-state-wrapper
+      ;; --- Daily Workflow (The Socratic Loop) ---
+      :desc "Begin New Session"         "b" #'life-os-begin-new-session
+      :desc "Generate Socratic Worksheet" "w" #'life-os-generate-worksheet
+      :desc "Generate Daily Schedule"     "p" #'life-os-generate-daily-schedule
+      :desc "End Session Review"            "e" #'life-os-end-session-review
 
-      ;; --- Nightly Auditor Persona (Priority 2) ---
-      :desc "Generate Full Progress Snapshot (Manual)" "n f" #'life-os-generate-full-progress-snapshot-wrapper
-      :desc "Generate Daily Context Canvas" "n d" #'life-os-generate-daily-context-canvas-wrapper
+      ;; --- Capture & Triage ---
+      :desc "Quick Capture (Hydra)"     "t" #'hydra-life-os-capture-type-selector/body
+      :desc "Capture Wizard (Full)"     "c" #'life-os-interactive-capture
+      :desc "Refile & Transition State" "r" #'life-os-refile-and-transition-state
 
-      ;; --- Socratic Loop Engine (Priority 3) ---
-      :desc "Generate Daily Worksheet" "w" #'life-os-generate-daily-worksheet-wrapper
+      ;; --- On-Demand Utilities ---
+      :desc "Schedule Task at Point"    "s" #'life-os-schedule-task-at-point
+      :desc "Set Deadline at Point"     "d" #'life-os-deadline-task-at-point
+      :desc "Promote Note to Task"      "x" #'life-os-promote-note-to-task
+      :desc "Process Item at Point"     "g" #'life-os-process-item-at-point ; 'g' for "goto"
 
-      ;; --- Session Management ---
-      ;; Using 's' as a prefix for session commands
-      :prefix ("s" . "Session Management")
-      :desc "Begin New Session" "b" #'life-os-begin-new-session-wrapper
-      :desc "End Session Review" "e" #'life-os-end-session-review-wrapper
-      ;; Exit the 's' prefix context (optional, implicit at end of map! or next :prefix)
-      :prefix nil
+      ;; --- Manual Generation (for testing/recovery) ---
+      :prefix ("g" . "Generate")
+      :desc "Full Progress Snapshot"    "p" #'life-os-generate-full-progress-snapshot
+      :desc "Daily Command Center (DCC)"  "d" #'life-os-generate-dcc)
 
-      ;; --- Scheduling & Time Management ---
-      ;; Changed keybinding for schedule function to avoid conflict with 's' prefix
-      :desc "Schedule Task (via Scheduler)" "S" #'life-os-schedule-task-at-point ; Changed from "s"
-      ;; Assuming a similar function exists for deadlines
-      :desc "Schedule Deadline (via Scheduler)" "D" #'life-os-deadline-task-at-point ; Example, adjust as needed
-
-      ;; --- Review Cycles ---
-      ;; Assuming these wrapper functions exist in lifeos.el
-      :desc "Run Daily Review" "r d" #'life-os-run-daily-review-wrapper
-      :desc "Run Weekly Review" "r w" #'life-os-run-weekly-review-wrapper
-      :desc "Run Monthly Review" "r m" #'life-os-run-monthly-review-wrapper
-      :desc "Run Annual Review" "r y" #'life-os-run-annual-review-wrapper
-
-      ;; --- Utilities ---
-      ;; Direct call to utility functions (example names, adjust as per actual functions)
-      :desc "Promote Note to Task" "p n" #'life-os-promote-note-to-task ; Example
-      :desc "Process Item at Point (ID Link)" "p i" #'life-os-process-item-at-point ; Example
-      ;; Add more utility bindings as needed
-      )
 
 ;; --- Hooks for Hierarchical Action Engine ---
-;; This hook is crucial for the confirmation workflow described in the Operational Manual.
-;; It should be idempotent (safe to add multiple times if this file is reloaded).
+;; This hook is crucial for the confirmation workflow.
 (add-hook 'org-after-todo-state-change-hook #'life-os--update-parent-on-confirmation)
 
 (provide 'lifeos-config)

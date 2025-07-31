@@ -812,32 +812,26 @@ activates the local scheduler keymap."
             :kill-buffer t))))
     (org-capture nil "s")
     (plist-get org-capture-plist :life-os-scheduler-selection)))
-(defun life-os--quick-capture-action (state priority)
-  "Backend for Quick Capture. Captures a task with STATE and PRIORITY.
-(Corrected Syntax v3.0)"
-  ;; The interactive spec is for standalone testing (M-x).
-  (interactive
-   (list (completing-read "State: " '("TODO" "NEXT" "APPT" "REVIEW" "GAP"))
-         (cdr (assoc (completing-read "Priority: " '("[#A] High" "[#B] Medium" "[#C] Low" "[None]"))
-                     '(("[#A] High" . "A") ("[#B] Medium" . "B")
-                       ("[#C] Low" . "C") ("[None]" . ""))))))
-  (let ((headline (read-string (format "Capture [%s]%s: " state (if (string-empty-p priority) "" (format " [#%s]" priority))))))
+(defun life-os--quick-capture-action (capture-type priority)
+  "Backend for Quick Capture. Captures an item with a given CAPTURE-TYPE and PRIORITY.
+This v7.3 implementation uses the CAPTURE-TYPE (e.g., 'IDEA', 'TASK')
+as the org-todo keyword, fulfilling the first stage of the lifecycle."
+  ;; The interactive spec is removed as this is now a pure backend function driven by the hydra.
+  (let ((headline (read-string (format "Capture [%s] [#%s]: " capture-type priority))))
     (when (and headline (not (string-empty-p headline)))
       (let* ((id (org-id-new))
              (full-headline
               (with-temp-buffer
-                ;; All subsequent forms are now correctly inside the 'with-temp-buffer' block.
-                (insert (format "* %s %s%s
-" state (if (string-empty-p priority) "" (format "[#%s] " priority)) headline))
-                (insert "  :PROPERTIES:
-")
-                (insert (format "  :ID:        %s
-" id))
-                (insert (format "  :CREATED:   %s
-" (format-time-string "[%Y-%m-%d %a %H:%M]")))
+                (insert (format "* %s [#%s] %s\n" capture-type priority headline))
+                (insert "  :PROPERTIES:\n")
+                (insert (format "  :ID:        %s\n" id))
+                (insert (format "  :CREATED:   %s\n" (format-time-string "[%Y-%m-%d %a %H:%M]")))
                 (insert "  :END:")
-                (buffer-string))) ; This is the single value returned for the let* binding.
-             (pointer (format "- %s%s %s [[id:%s]]" state (if (string-empty-p priority) "" (format " [#%s]" priority)) headline id)))
+                (buffer-string)))
+             (pointer-summary (format "%s [#%s] %s" capture-type priority headline))
+             ;; The pointer-gen agent will be integrated later.
+             ;; For now, use the robust summary.
+             (pointer (format "- %s [[id:%s]]" pointer-summary id)))
         (when (life-os--append-to-inbox-and-save full-headline)
           (life-os--append-to-active-log-inbox pointer)
           (message "LifeOS: Quick-captured '%s'" headline))))))
