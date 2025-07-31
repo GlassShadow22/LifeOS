@@ -1941,4 +1941,33 @@ It consumes DCC, Full-Progress, and Session-Log data, then calls an AI prompt."
   (interactive)
   (life-os-generate-daily-context-canvas))
 
+;; --- Group 9: The Triage Engine (v7.3) ---
+
+(defun life-os-refile-and-transition-state ()
+  "Triage the item at point by refiling and evolving its state.
+This function is the core of the `Triage-First` principle in v7.3.
+It orchestrates an interactive sequence to:
+1. Select a canonical refile target.
+2. Select a new Workflow State (e.g., 'IMPL', 'THNK').
+It then executes the refile and state change as an atomic operation."
+  (interactive)
+  (unless (org-at-heading-p)
+    (user-error "Triage must be initiated from a headline."))
+
+  ;; --- 1. Get Refile Location ---
+  (let* ((rfloc (org-refile-get-location "Refile to" nil t))
+         ;; --- 2. Get New Workflow State ---
+         (workflow-states (car (cdr (cadr org-todo-keywords)))) ; Extracts ("THNK(h)" "IMPL(m)"...)
+         (workflow-keywords (mapcar (lambda (x) (car (split-string x "("))) workflow-states))
+         (new-state (completing-read "Transition to Workflow State: "
+                                     workflow-keywords nil :require-match t)))
+
+    (when (and rfloc new-state)
+      ;; --- 3. Execute State Change ---
+      (org-todo new-state)
+      ;; --- 4. Execute Refile ---
+      ;; Use a prefix arg to force running the hook even if state is same
+      (org-refile 4)
+      (message "Item triaged to %s with state [%s]." (or (cadr rfloc) (car rfloc)) new-state))))
+
 (provide 'lifeos)
