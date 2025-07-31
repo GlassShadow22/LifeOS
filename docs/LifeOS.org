@@ -1,605 +1,435 @@
+#+TITLE: The LifeOS v7 Blueprint: A Manual for a Self-Organizing System
+#+AUTHOR: Architect Reggy Elizer
+#+EMAIL: lab-user@Genesis
+#+DATE: <2025-07-21 Mon>
+#+VERSION: 7.0
+#+STARTUP: overview
+
+#+OPTIONS: toc:2 num:nil H:2 ^:{}
+#+BIND: org-export-initial-scope a
+#+PROPERTY: header-args :tangle no
+
+#+DESCRIPTION: The complete architectural specification, operational manual, and philosophical treatise for the LifeOS, version 7.0.
+#+KEYWORDS: lifeos, org-mode, emacs, pkm, gtd, ai, automation, blueprint
+
+
 * *Section 1: Core Philosophy and Design Principles*
 :PROPERTIES:
 :CUSTOM_ID: section-1-core-philosophy-and-design-principles
 :END:
-This document provides the complete architectural and operational
-blueprint for the LifeOS system, version 7.0. It is designed for a
-successor agent to achieve total system understanding.
+This document provides the complete architectural and operational blueprint for the LifeOS system, version 7.0. It is designed for a successor agent to achieve total system understanding, enabling not just maintenance, but continued evolution in alignment with its core principles.
 
-The fundamental objective of LifeOS is to transform the user's personal
-information management from a passive, archival activity into an
-*active, intelligent, and conversational partnership*. It is not a tool;
-it is an environment. It elevates a collection of text files into a
-self-organizing, AI-augmented extension of the user's mind, governed by
-the following core principles:
+The fundamental objective of LifeOS is to transform the user's personal information management from a passive, archival activity into an *active, intelligent, and conversational partnership*. It is not a tool; it is an environment. It rejects the paradigm of siloed applications and fragmented data streams in favor of a single, cohesive ecosystem. It elevates a collection of simple text files into a self-organizing, AI-augmented extension of the user's mind, governed by a set of uncompromising core principles.
 
-1. *Frictionless, Ubiquitous Capture:* The cost of capturing any
-   thought, task, or piece of data must be near zero. This is the
-   foundation upon which all other intelligence is built.
-2. *Scheduled Synthesis and Review:* Data has no value without
-   processing. The system must enforce a disciplined, scheduled rhythm
-   of review and synthesis, transforming raw data into structured
-   knowledge and actionable plans.
-3. *AI as Chief of Staff:* The AI's role is not that of a conversational
-   assistant but a hyper-efficient Chief of Staff. It performs complex,
-   data-heavy synthesis non-interactively to produce high-signal,
-   zero-chatter briefings and recommendations for the user (the
-   "Architect" or "Commander") to act upon.
-4. *A Session-Based Environment:* The user's work is not a continuous
-   stream but a series of focused sessions. The system's architecture
-   reflects this, creating discrete, data-rich containers
-   (=Session-XXX.org=) for every work period, which serve as the primary
-   ground truth for daily and weekly reviews.
+** 1.1: The Mission: AI as Chief of Staff
+The central metaphor and prime directive of the LifeOS is the elevation of its AI component from a reactive "assistant" to a proactive "Chief of Staff." This distinction is the philosophical bedrock of the entire system. An assistant is a tool that waits for explicit commands and performs discrete, isolated tasks. It fetches information upon request. A Chief of Staff, in contrast, is a strategic partner who anticipates needs, synthesizes complex information from disparate sources, and provides high-level briefings to enable effective decision-making.
+
+The LifeOS AI does not engage in conversational chatter; it performs deep, non-interactive synthesis. Its role is to execute the *Meta-Awareness Engine's* nightly run, analyzing the totality of the user's data—tasks, notes, schedules, time logs, knowledge gaps—and to produce a high-signal, zero-chatter strategic briefing (the Daily Command Center). Furthermore, it acts as the *AI Tactical Planner*, ingesting that strategic briefing to generate a tailored, mission-specific action plan at the start of every session. This model frees the user—the "Architect"—from the cognitive load of low-level data aggregation and tactical planning, elevating their role to that of a strategic commander who consumes synthesized intelligence, queries for options, and makes final decisions.
+
+** 1.2: The First Principle: Triage-First, Inbox-Zero
+The foundational discipline of the LifeOS is a strict and unwavering adherence to the Triage-First Principle. The system's central capture file, =inbox.org=, is architected to be a transient, high-turnover staging area—a cognitive airlock between the chaotic external world and the structured internal world. It is explicitly *not* a permanent database, a to-do list, or an archival system. Every piece of information that enters the LifeOS, without exception, lands in the inbox.
+
+The core user workflow is therefore not simply "capture," but *"capture-and-triage."* The system is built on the profound trust that the user will, at regular, disciplined intervals, process every single item in the inbox to zero. This processing is a decisive act of routing: an item is evaluated, given the appropriate metadata, and moved to its permanent, canonical home within the Information Architecture. This discipline eradicates "digital hoarding" at the source and prevents the system from descending into a state of entropic chaos. By ensuring that every idea, task, and note is seen, assessed, and placed in its proper context, this principle transforms the act of information management from a source of low-level anxiety into a powerful, clarifying ritual.
+
+** 1.3: The Second Principle: A Session-Based Environment
+The LifeOS rejects the modern paradigm of a continuous, always-on stream of work. It asserts that deep, meaningful work occurs in discrete, focused quanta of time known as sessions. The system's architecture is a direct reflection of this reality. Each work period is contained within its own immutable, data-rich artifact: =Session-XXX.org=. This file is not a mere "daily note"; it is a complete operational log, a time capsule of the user's focus, inputs, and outputs for a given period.
+
+The initiation and termination of a session are formal, ritualized acts (=life-os-begin-new-session=, =life-os-end-session-review=) that create a clear psychological and data-driven boundary between periods of intense work and periods of deliberate rest and integration. The session log becomes the primary ground truth for all subsequent AI-driven analysis. The system learns from the granular, honest record of these sessions—what was accomplished, what distractions arose, what metrics were recorded—to continuously refine its future briefings and recommendations. This approach treats the user's time and attention as the most valuable resources, providing a dedicated structure to protect and honor them.
+
+** 1.4: The Third Principle: The Rhythm of the System (Numerological Alignment)
+The LifeOS operates on a cyclical, rhythmic paradigm, not a linear, chronological one. It posits that not all days are created equal, and that optimal performance is achieved through alignment, not force. The system's behavior, the user's recommended focus, and the AI's tactical plans are designed to synchronize with a personalized numerological cycle.
+
+The "energy" of any given day is defined by its classification into one of eight distinct *Archetypal Days* (e.g., PD 4 - "Hard Work Day," PD 7 - "Reflection Day," PD 9 - "Outgoing Day"). This archetype acts as the primary input for the AI Tactical Planner, which tailors its daily action plan to leverage the day's inherent potential. On a Hard Work Day, the system prioritizes execution and deep focus by surfacing high-effort implementation tasks. On a Reflection Day, it fosters insight and learning by prioritizing the review of knowledge gaps and evergreen notes. This transforms the system from a static toolset into an adaptive partner that actively encourages the user to engage in different cognitive modes at the optimal time, fostering a workflow that is in harmony with a larger, more powerful personal rhythm.
+
+** 1.5: The Fourth Principle: The Self-Organizing System (Data Homeostasis)
+A system that requires constant manual maintenance is a failed system. The LifeOS is designed to be a self-organizing and self-maintaining entity that actively combats data decay and digital entropy. This is the principle of Data Homeostasis. The system recognizes that the state and relevance of information are not static; they evolve.
+
+This principle will be realized through a *Data Homeostasis Engine*—a suite of automated routines, triggered by =systemd=, that function as the system's immune and lymphatic systems. These routines are responsible for periodically scanning the data layer and enforcing a set of predefined rules: they can escalate the priority of aging, unaddressed tasks; automatically apply a =:STALE:= tag to in-progress items that have seen no activity; and programmatically resolve dependency chains by updating the status of tasks whose blockers have been cleared. This principle removes a significant class of cognitive load from the user, freeing them from having to act as the system's janitor. It ensures the integrity and relevance of the data over time, moving the LifeOS towards the ideal of a living, autonomous entity that actively manages its own health.
 
 
-* *Section 2: System Architecture Overview*
+* *Section 2: The Integrated Desktop Architecture*
 :PROPERTIES:
-:CUSTOM_ID: section-2-system-architecture-overview
+:CUSTOM_ID: section-2-the-integrated-desktop-architecture
 :END:
-The LifeOS is composed of five distinct but deeply interconnected
-layers, forming a complete data processing pipeline.
+The LifeOS is not an application; it is a holistic computing environment. It fundamentally rejects the paradigm of a text editor as a standalone tool and instead elevates it to the role of a central "kernel" for a fully integrated desktop. This architecture is designed as a series of distinct, concentric layers, where control and data flow logically from the host operating system down into the core logic of the user's personal knowledge system. This layered approach ensures robustness, a clear separation of concerns, and allows each component of the stack to perform its function with maximum efficiency.
 
-1. *The Automation Layer (External Triggers):* This layer exists outside
-   of Emacs and is responsible for triggering non-interactive system
-   functions. As per Dossier #1 of the System Codex, this is handled by
-   =systemd= user timers, which call =emacsclient= to execute specific
-   backend functions on a schedule. This is the "pacemaker" of the
-   system.
-2. *The Logic Layer (The Backend: =lifeos.el=):* This is the core
-   engine, written in Emacs Lisp. It contains all non-interactive helper
-   functions for path generation, context gathering, data processing, AI
-   communication, and file I/O. It has no knowledge of user interfaces
-   or keybindings.
-3. *The AI Layer (The "Mind": =~/journal/.prompts/=):* This is a library
-   of master prompt files. Each file defines a specific AI persona, its
-   directive, and its precise input/output format. This library
-   externalizes the AI's logic from the Lisp code, allowing for rapid
-   iteration and a clear separation of concerns.
-4. *The Data Layer (The "World": =~/journal/=):* This is the user's
-   collection of Org-mode files. These files are not merely a database;
-   they are the structured "world" upon which the system operates. The
-   system reads from and writes to this layer, making it the central
-   repository of both raw input and synthesized output.
-5. *The Interface Layer (The Frontend: =config.el=):* This is the
-   exclusive domain of user interaction. It is responsible for defining
-   keybindings (=map!=), configuring package behavior (=use-package!=),
-   and creating interactive command interfaces (e.g., =defhydra=). It
-   connects the user's keystrokes to the functions in the Logic Layer.
+** 2.1: A Layered Approach
+The system is composed of two primary echelons: Layer 0, the host system that provides the foundational services and global user interface; and Layer 1, the Emacs "Kernel," where the core intelligence, logic, and data of the LifeOS reside. These are further decomposed into five distinct functional layers, forming a complete data processing and interaction pipeline.
+
+- *Layer 0: The Host System (Arch Linux):* The physical environment. Provides the raw computing power, the process scheduler, and the global control surface. It is the bedrock upon which the LifeOS is built.
+- *Layer 1: The Emacs "Kernel":* The cognitive and logical core. Runs as a persistent, headless daemon, acting as the central nervous system for the entire architecture.
+
+*** Layer 0: The Host System (Arch Linux)
+LifeOS is not designed to be platform-agnostic. It is a deeply integrated system that leverages the specific, powerful capabilities of a minimalist Linux distribution. It treats the operating system's core components not as external dependencies, but as integral parts of its own architecture.
+
+**** systemd: The Pacemaker
+=systemd=, in its user-level instance, functions as the "pacemaker" or automation engine for the LifeOS. It is responsible for initiating all non-interactive, scheduled, and event-driven processes, ensuring the system's rhythm continues even when the user is not actively engaged. Its role is twofold:
+
+1.  *Kernel Liveness:* The primary =emacs.service= user unit ensures that the Emacs daemon—the LifeOS "Kernel"—is started at user login and automatically restarted if it ever fails. This guarantees that the core of the system is always running, ready to receive commands from any part of the desktop environment.
+2.  *Scheduled Intelligence:* A suite of =.timer= units orchestrates all of the system's background intelligence. This includes the timer that triggers the nightly **Meta-Awareness Engine** to generate the Daily Command Center, as well as future timers that will run the **Data Homeostasis Engine** to perform automated system cleanup. =systemd= is the canonical actuator for any process that must happen "unseen." It communicates with the Emacs Kernel via =emacsclient= calls, forming the bridge from the OS to the Logic Layer.
+
+**** XMonad: The Global Interface
+The XMonad window manager serves as the global "control surface" for the LifeOS, extending its reach beyond the confines of an Emacs window to every part of the user's desktop. Its configuration file, =xmonad.hs=, is a critical component of the Interface Layer, responsible for two key functions:
+
+1.  *Global Invocation:* It maps system-wide keybindings that allow the user to invoke LifeOS functions from any application, at any time. A keypress in a web browser can directly trigger an =org-capture= template; another can call the script to assemble the "Tactical Cleanup" dashboard. These bindings universally use =emacsclient= to send commands to the running Emacs daemon, ensuring instantaneous response.
+2.  *UI/UX Consistency:* It defines the physical presentation of the LifeOS interfaces. It contains explicit rules for managing the Emacs frames spawned by =emacsclient=. This ensures that quick-capture Hydras appear as unobtrusive, correctly-sized "drawers" at the bottom of the screen, while deep-work "Dashboards" can be spawned in their own dedicated, full-screen workspaces. This layer guarantees a consistent, predictable, and ergonomically designed user experience across all interactions.
+
+*** Layer 1: The Emacs "Kernel" (The LifeOS Core)
+Running as a persistent daemon managed by Layer 0, the Emacs "Kernel" is the brain of the operation. It is the environment where the system's data lives, its logic is executed, and its intelligence is formulated.
+
+**** The Logic Layer (lifeos.el)
+This file is the pure "backend" of the LifeOS. It is a comprehensive library of Emacs Lisp functions that defines the system's *capabilities*. It is written with a strict separation of concerns: it has no knowledge of user interfaces, keybindings, or interactive commands. Its sole responsibility is to provide the verbs of the system. This includes:
+-   All foundational utilities for path generation, API communication, and data processing.
+-   The functions that read and write to the Canonical Files defined in the Information Architecture.
+-   The implementation of the Review Cycle Engine.
+-   The new, complex query and synthesis functions required by the Meta-Awareness and Data Homeostasis engines.
+-   All communication with the AI, including prompt assembly and response parsing.
+
+**** The Interface Layer (lifeos-config.el)
+This file is the Emacs-internal "frontend." It is exclusively concerned with user interaction. Its role is to bridge the Architect's keystrokes with the capabilities defined in the Logic Layer. This file defines the system's *usability*. Its responsibilities include:
+-   Defining all keybindings via =map!`.
+-   Constructing all interactive user interfaces, such as the multi-stage Hydras for quick capture (=defhydra=).
+-   Writing the =defun= blocks for all interactive commands (e.g., =life-os-interactive-capture=, =life-os-tactical-cleanup=) that orchestrate calls to the backend functions in =lifeos.el=.
+-   Configuring the behavior of all Emacs packages via =use-package= declarations, ensuring a declarative, performant, and well-organized setup.
+
+**** The AI Layer (.prompts)
+This directory represents the "decoupled mind" of the AI Chief of Staff. By externalizing all AI instructions into a library of master prompt files, the LifeOS achieves a critical separation of concerns between logic and intelligence. The Elisp code in the Logic Layer is responsible for *gathering context* and *executing an AI call*; the prompt files are responsible for defining the AI's *persona, directive, and output format*. This architecture allows the AI's "brain" to be rapidly iterated upon, tested, and improved without modifying a single line of compiled Lisp code. This layer includes the specifications for all review cycle personas as well as the new, crucial prompts for the Meta-Awareness Engine and the AI Tactical Planner. It is the most agile and adaptable layer of the entire system.
 
 
-* *Section 3: The File Ecosystem*
+* *Section 3: The Information Architecture*
+:PROPERTIES
+:CUSTOM_ID: section-3-the-information-architecture
+:END:
+If the Logic Layer is the engine and the Interface Layer is the control surface, the Information Architecture is the **chassis, grammar, and immutable law** of the entire LifeOS. It is the most critical section of this blueprint, as the structure of the data dictates the capabilities of the system that operates upon it. This architecture is designed to be both human-readable and machine-parsable, providing a robust framework for capturing, processing, and retrieving information at scale. It defines the complete lifecycle of an entry, the canonical homes for all data, and the rich metadata model that gives the system its intelligence.
+
+** 3.1: The Lifecycle of an Entry
+An entry in the LifeOS is not a static object; it is a dynamic entity that flows through a well-defined lifecycle. This process begins with unstructured capture and ends with a structured, terminal state, ensuring that every piece of information is processed with intention.
+
+*** 3.1.1: Initial Capture States (IDEA, LINK, NOTE, TASK)
+Every item enters the LifeOS through =inbox.org= with one of four initial TODO states. These states are not just labels; they are declarations of *intent* at the moment of capture, defining the fundamental nature of the information and guiding its subsequent triage.
+
+- =IDEA=: A non-actionable concept, possibility, hypothesis, or question. It is an object of thought to be *considered*, researched, or validated. This is the state for strategic insights, points of friction, and creative sparks.
+- =LINK=: An explicit reference to an external resource (a URL, a local file path). The primary value of this entry is the pointer itself. It is an object of information to be *consumed*, reviewed, or archived for later reference.
+- =NOTE=: A declarative statement of fact or an observation. It is a snippet of information—an event that has occurred, a quote, a meeting outcome, a piece of data—to be *recorded* and filed as ground truth.
+- =TASK=: A concrete, actionable commitment. It is a discrete unit of work to be *done*. It represents an obligation that requires time and energy to resolve.
+
+*** 3.1.2: Post-Triage & Terminal States (THNK, IMPL, DONE, KILL, HOLD)
+Once an entry is triaged from =inbox.org= into a canonical file, its state can be refined to reflect its role in a larger workflow.
+
+- =THNK=: The primary post-triage state for an =IDEA=. It signifies that the concept has been filed in an appropriate location (e.g., =gaps.org=, =someday-maybe.org=) and is now in a queue for active contemplation or research.
+- =IMPL=: The primary post-triage state for an =IDEA= or a complex =TASK= that has been approved for execution. It signals the transition from concept to concrete work, typically within =projects.org= or =systems.org=.
+
+These active states are resolved by three universal terminal states:
+- =DONE=: The item was successfully completed.
+- =KILL=: The item was evaluated and actively rejected. This is a crucial distinction from simple deletion, as it preserves a record of the decision not to proceed.
+- =HOLD=: The item is valid but progress is currently blocked, pending an external event, dependency, or a future review cycle.
+
+*** 3.1.3: Progress Tracking (:STATUS:)
+For granular tracking of active =IMPL= or =THNK= items, a =:STATUS:= property is used. This allows for a more nuanced view of workflows than a simple TODO state can provide, and is the primary mechanism used by the Meta-Awareness Engine to identify bottlenecks.
+
+- =backlog=: The task is acknowledged and filed but is not prioritized for the current work cycle.
+- =next=: The task has been identified as a priority and is slated for the next available work slot.
+- =in-progress=: The task is actively being worked on. The Data Homeostasis Engine monitors this state for staleness.
+- =review=: The core work is complete, and the task is pending a final verification, merge, or confirmation.
+
+** 3.2: The Canonical File System
+This is the physical map of the LifeOS "world." The file system is organized by function and cognitive mode, not by project or topic. This ensures a stable, scalable structure where every triaged item has one and only one logical, permanent home.
+
+*** 3.2.1: Core Files (projects.org, knowledge.org, etc.)
+- =inbox.org=: The single, transient entry point for all captured information. It must be processed to zero regularly.
+- =projects.org=: The home for all active, outcome-driven work. Entries here have clear goals and completion criteria.
+- =systems.org=: The master "Literate Dotfiles" repository for all system configuration, including notes, scripts, and automation rules.
+- =knowledge.org=: The permanent, evergreen reference wiki. This is the user's personal "second brain" for distilled, factual information.
+- =disciplines.org=: The file for all pre-planned, recurring events, including daily Habits, scheduled Routines, and recurring Subscriptions.
+- =life-log.org=: A chronological, append-only log for unplanned life events, notes about people (=:CONTACT:=), and meeting minutes.
+- =gaps.org=: The dedicated queue for tracking and processing identified knowledge gaps.
+- =someday-maybe.org=: An incubator for long-term or speculative ideas that are not active projects.
+- =rewards.org=: The sanctioned queue for all captured distractions, to be reviewed during leisure time.
+
+*** 3.2.2: The Secure Vault (private.org)
+This file is a critical component of the architecture, representing a deliberate exception to the "text-files-under-version-control" paradigm.
+- =private.org=: A dedicated file for storing sensitive, private information (credentials, keys, secure notes). It is explicitly and permanently listed in the root =.gitignore= file of the user's journal, ensuring that its contents are never committed to any version control history. It is the one and only "secure enclave" within the LifeOS.
+
+** 3.3: The Metadata Model
+The metadata model provides the machine-readable structure that allows for intelligent filtering, automated processing, and the generation of dynamic views. It consists of a redefined priority scale and a suite of core properties.
+
+*** 3.3.1: The Action-Oriented Priority Scale (A-E)
+This scale moves beyond a simple linear ranking of importance to create a behavioral directive at the moment of triage.
+
+- =[#A] - CRISIS=: Reserved for true emergencies. It is the only priority that signifies a task should *not* be refiled and must be acted upon immediately.
+- =[#B] - High Priority=: An urgent and important task for the current work cycle.
+- =[#C] - Medium Priority=: The default priority for the majority of standard tasks.
+- =[#D] - Low Priority=: A non-urgent or "nice-to-have" task.
+- =[#E] - SANCTIONED DISTRACTION=: A unique classification that signals an item should be triaged directly to =rewards.org=. This allows the user to capture a distraction without breaking focus, trusting it will be available later.
+
+*** 3.3.2: The Core Properties (:BLOCKED_BY:, :EFFORT:, etc.)
+These properties are added during triage to enrich an entry with structured data, enabling advanced workflows and automated analysis.
+
+- =:BLOCKED_BY: [ID]=: Creates an explicit dependency on another Org entry, allowing for automated progression when the blocker is resolved.
+- =:DURATION: [Time]=: An analytical property used by the Homeostasis Engine to track the actual time an item has spent in various states or received user attention.
+- =:EFFORT: [Estimate]=: A user-defined estimate of time or complexity, used for planning and later comparison against =:DURATION:=.
+- =:CATEGORY: [String]=: A high-level, mutually exclusive classification (e.g., =Work=, =Personal=, =Learning=) used for top-level life balance analysis.
+- =:CONTACT: [ID]=: A link to a heading in =life-log.org= that represents a person, connecting tasks to the people involved.
+- =:REVIEW_AFTER: [Date]=: A "snooze" mechanism that removes an item from active views until the specified date.
+- =:NEXT_ACTION: [String]=: A short, declarative string describing the absolute next physical action required to make progress, designed to overcome inertia.
+- =:ENERGY: [String]=: The required mental state for the task (e.g., =low=, =medium=, =high=), enabling the creation of energy-based agenda views.
+- =:TICKET: [URL]=: A link to an external issue tracker (e.g., Jira, GitHub), bridging the LifeOS with collaborative work systems.
+
+*** 3.3.3: The Tagging Vocabulary (Reference)
+Tags are the flexible, non-exclusive, user-defined labels that provide fine-grained context to any entry. While properties define the *state* and *attributes* of an item, tags define its *subject matter* and its relationship to various domains of knowledge and work. They are the primary mechanism for creating custom views, filtering information, and making the system searchable. A single entry can, and often should, have multiple tags. The vocabulary is emergent, but is organized around the following core categories:
+
+**** System & Configuration Tags
 :PROPERTIES:
-:CUSTOM_ID: section-3-the-file-ecosystem
+:DESCRIPTION: Describes the component of the digital environment being modified.
+:PRIMARY_FILE: systems.org
 :END:
-A total understanding of the system requires a total understanding of
-the files it reads, writes, and depends on.
+- =:emacs:=
+- =:xmonad:=
+- =:fish:=
+- =:linux:=
+- =:config:= (A general tag for any configuration change)
+- =:script:=
+- =:keybinding:=
+- =:theme:=
+- =:service:= (For =systemd= services)
+- =:automation:=
 
-** *A. Configuration & Logic Files (System's Source of Truth)*
+**** Project & Work Tags
 :PROPERTIES:
-:CUSTOM_ID: a.-configuration-logic-files-systems-source-of-truth
+:DESCRIPTION: Describes the nature of the work being done.
+:PRIMARY_FILE: projects.org
 :END:
-- *=~/.doom.d/lisp/lifeos.el=*: *The Backend.* This is the largest and
-  most critical file, containing all the core Lisp functions. It defines
-  the system's /capabilities/.
-- *=~/.doom.d/config.el=*: *The Frontend.* This file defines the user
-  interface. It configures packages and binds keys, making the functions
-  in =lifeos.el= accessible. It defines the system's /usability/.
-- *=~/journal/.prompts/=*: *The AI Logic Core.* This directory contains
-  all master AI prompt files. The system is entirely dependent on these
-  files for all AI-driven functionality. They are:
-  - =1A_Annual_Q.org=: Generates the Annual Vision Questionnaire.
-  - =1B_Annual_Synth.org=: Synthesizes user answers and numerology into
-    the Annual Codex.
-  - =2A_Monthly_Q.org=: Generates the Monthly Debrief Questionnaire
-    based on past performance.
-  - =2B_Monthly_Synth.org=: Synthesizes the debrief into the next
-    month's Tactical Directive.
-  - =3A_IntraMonth_Q.org=: Generates the mid-cycle Tactical Debrief
-    Questionnaire.
-  - =3B_IntraMonth_Synth.org=: Generates the mid-cycle Tactical
-    Readjustment.
-  - =4A_Bridge_Q.org=: Generates the transitional Ebb & Flow
-    Questionnaire between months.
-  - =4B_Bridge_Synth.org=: Generates the Transitional Tactical Outlook.
-  - =5_Daily_Gen.org=: The Chief of Staff prompt that generates the
-    Daily Command Center.
-  - =6_DCC_Pointer_Gen.org=: A specialized distiller for creating
-    natural-language task pointers (a future enhancement target).
-  - =7_Strategic_Scheduler.org=: The AI Chief of Staff prompt for
-    generating task scheduling options.
+- =:{project-name}:=(e.g., =:lifeos-dev:=, =:phoenix-project:=)
+- =:bug-fix:=
+- =:feature-dev:=
+- =:refactor:=
+- =:documentation:=
+- =:testing:=
+- =:deployment:=
+- =:work:= (High-level tag; can be used instead of or alongside =:CATEGORY: Work=)
 
-** *B. Core Data Files (User-Managed Inputs)*
+**** Personal & Life Tags
 :PROPERTIES:
-:CUSTOM_ID: b.-core-data-files-user-managed-inputs
+:DESCRIPTION: Describes non-work areas of life and activity.
+:PRIMARY_FILE: life-log.org, disciplines.org
 :END:
-These files are the primary data sources the user creates and on which
-the system's intelligence depends.
+- =:personal:= (High-level tag; can be used instead of or alongside =:CATEGORY: Personal=)
+- =:health:=
+- =:finance:=
+- =:household:=
+- =:chore:=
+- =:errand:=
+- =:family:=
+- =:friends:=
+- =:social:=
 
-- *=~/journal/inbox.org=*: The central capture location for tasks
-  generated by the Capture Gears. It serves as the primary input for
-  triage and the source of tasks for the "Global Task Horizon."
-- *=~/journal/templates/habits.org=*: A simple Org file containing
-  master headlines for daily habits. It is read once at the start of
-  every new session by =life-os-begin-new-session=.
-  - /Example =habits.org= content:/
-    =org     * TODO Review Anki/Drill Cards :Habit:daily:     * TODO 30 minutes of cardio :Habit:daily:=
-- *All =*.org= files in =~/journal/=*: This collection, defined by
-  =org-agenda-files= in =config.el=, forms the global database for all
-  queries, including =org-ql= searches for =SCHEDULE-ME= tasks and
-  agenda generation for the AI scheduler.
-
-** *C. System-Generated Files (System Outputs)*
+**** Knowledge & Learning Tags
 :PROPERTIES:
-:CUSTOM_ID: c.-system-generated-files-system-outputs
+:DESCRIPTION: Describes the subject matter of knowledge being processed.
+:PRIMARY_FILE: knowledge.org, gaps.org
 :END:
-These are the canonical output artifacts created by the various LifeOS
-workflows.
+- =:networking:=
+- =:security:=
+- =:programming:=
+- =:history:=
+- =:philosophy:=
+- =:article:=
+- =:book:=
+- =:video:=
+- =:learning:= (High-level tag; can be used instead of or alongside =:CATEGORY: Learning=)
 
-- *Worksheets (in =~/journal/worksheets/=):* These are AI-generated
-  questionnaires for the user to fill out. The system depends on the
-  user completing these to proceed to the Synthesis (Phase B) part of
-  any review cycle.
-- *Outlooks/Directives (in =~/journal/outlooks/=):* These are the final,
-  synthesized strategic documents (Annual Codex, Monthly Directives,
-  Tactical Outlooks). The system is critically dependent on these files,
-  as they are recursively used as input for subsequent, lower-level
-  reviews (e.g., the Annual Codex is an input for Monthly reviews and
-  the DCC).
-- *Session Logs (in =~/journal/logs/sessions/=):* e.g.,
-  =Session-042.org=. These are the most critical operational logs. Each
-  file contains a complete record of a single work session. The user is
-  dependent on this as their primary workspace. The system is critically
-  dependent on the /most recent/ log as the primary data source for
-  generating the next day's DCC.
-- *Daily Command Center (DCC) (in =~/journal/logs/YYYY/MM/=):* e.g.,
-  =2025-07-25.org=. The AI-generated daily briefing. The user is
-  dependent on this as their starting point for any new session.
-
-** *D. Internal State & Cache Files (System-Managed)*
+**** Meta & Workflow Tags
 :PROPERTIES:
-:CUSTOM_ID: d.-internal-state-cache-files-system-managed
+:DESCRIPTION: Describes the item's role within a workflow, often universally applicable.
+:PRIMARY_FILE: Universal
 :END:
-- *=~/journal/.system/session.org=*: A single plain text file containing
-  one integer: the current session count. The
-  =life-os-begin-new-session= function reads and overwrites this file.
-- *=~/journal/.system/parents.org=*: A cache file containing the titles
-  and IDs of all =:Epic:= tasks in =inbox.org=. It is generated by
-  =life-os-update-parent-cache= and read by
-  =life-os-interactive-capture= to reduce friction when parenting tasks.
+- =:review:= (Indicates the item requires a formal review)
+- =:blocker:= (Flags an item that is preventing progress on another)
+- =:friction:= (Identifies a process that is inefficient and needs improvement)
+- =:question:= (Marks an item that is an explicit question to be answered)
+- =:meeting:= (Relates to a synchronous meeting or appointment)
 
 
-* *Section 4: Functional Decomposition of =lifeos.el=*
+* *Section 4: The Core Engine: A Functional Decomposition of lifeos.el*
 :PROPERTIES:
-:CUSTOM_ID: section-4-functional-decomposition-of-lifeos.el
+:CUSTOM_ID: section-4-the-core-engine-a-functional-decomposition-of-lifeos.el
 :END:
-This section provides a complete, function-by-function analysis of the
-backend logic layer. Each function group represents a distinct system
-capability.
+This section provides a complete, function-by-function analysis of the backend logic layer, =lifeos.el=. This file is the system's engine, containing the non-interactive Lisp code that implements the laws and carries out the processes defined in the preceding architecture. It is designed to be a pure, headless library; it knows how to operate on the LifeOS data, but has no knowledge of the keybindings or user interfaces that call it. Each functional group below represents a distinct system capability, updated to reflect the full scope of the v7 design.
 
-** *A. Group 1: Foundational Utilities (API & Data Processing)*
+** 4.1: Foundational Utilities (API, Data, Paths)
+This group represents the most fundamental building blocks of the system, providing the core I/O, communication, and environmental capabilities upon which all higher-level logic is built.
+
+- =life-os-call-ai=: The sole, sanctified diplomatic channel to the AI Layer. This function is responsible for abstracting away all the complexities of API communication. It handles key retrieval from =auth-source=, JSON payload construction, sending the request via =plz=, and returning the raw, parsed response. All other functions in the system that need to communicate with the AI do so through this single, robust gateway.
+- =life-os-extract-text-from-ai-response=: A dedicated data-extraction utility that cleanly parses the nested =alist= structure returned by the Gemini API, returning only the core textual payload. This isolates the rest of the system from changes in the API's response format.
+- =life-os-read-prompt=: The canonical function for loading the master AI prompt files from =~/journal/.prompts/=. It ensures that all AI instructions originate from the version-controlled AI Layer.
+- *Path Generation Helpers* (=life-os--generate-annual-worksheet-path=, =...-dcc-path=, etc.): This suite of non-interactive functions is responsible for enforcing the Canonical File System architecture. They are the sole source of truth for file and directory paths, ensuring that every part of the LifeOS reads from and writes to the correct location, eliminating ambiguity and hardcoded paths throughout the system.
+
+** 4.2: The Capture & Triage Suite (Gears 1-3, Refiling)
+This group of functions implements the "Triage-First" principle, providing the tools for both frictionless capture and disciplined processing. This suite is heavily modified in v7 to support the full Information Architecture.
+
+- *Capture Frontends* (=life-os--quick-capture-action=, =life-os-interactive-capture=, =life-os-promote-note-to-task=): The backends for the user-facing capture "gears." In v7, their logic is expanded. They are now responsible for presenting the user with the four initial Capture States (=IDEA=, =LINK=, =NOTE=, =TASK=) as the first step of any capture. The comprehensive wizard, =life-os-interactive-capture=, is further updated to intelligently prompt for the core properties (=:EFFORT:=, =:ENERGY:=, etc.) defined in the architecture, embedding this rich metadata at the moment of creation.
+- *Refiling Backend*: While refiling is an interactive process for the user, it requires a suite of backend helper functions. These functions will be designed to support the "Triage Block" workflow, providing logic for:
+  -   Programmatically identifying the user's defined refile targets (the canonical =.org= files).
+  -   Moving an Org entry from =inbox.org= to the selected destination.
+  -   Facilitating the transition of a capture state (e.g., =IDEA=) to a post-triage state (e.g., =THNK=) as part of the move.
+
+** 4.3: The Review Cycle Engine (Intra-Month, Bridge, etc.)
+This is the system's formal, long-form "operating system," responsible for orchestrating the multi-phase, AI-driven review and synthesis cycles that operate on a cadence longer than a single day. This engine is largely mature, but its importance is re-contextualized in v7 as the high-level strategic counterpart to the new daily tactical loop.
+
+- =life-os-run-review-cycle=: The main entry point for any formal review (Annual, Monthly, Bridge). Its function is to read a configuration =plist= (e.g., =life-os-config--bridge-review=), which defines the date logic, context-gatherers, and AI prompts for the review. It then orchestrates the multi-phase process of generating a questionnaire (Phase A) and synthesizing the user's answers into a strategic outlook (Phase B), which in turn becomes input for future, lower-level cycles.
+
+** 4.4: The AI Integration Suite
+This suite is the heart of the v7 architecture's intelligence, representing a significant leap in capability. It transforms the AI from a simple generator into a strategic partner that actively synthesizes the state of the entire system.
+
+*** 4.4.1: The Meta-Awareness Engine (DCC Generation)
+This is a new, top-tier capability, encapsulated in a single, powerful function that replaces the previous, simpler daily planner.
+- =life-os-generate-system-synthesis=: This non-interactive function is designed to be run nightly by =systemd=. Its mandate is to conduct a full "systems audit" of the entire Data Layer. It will perform a series of sophisticated =org-ql= queries to gather metrics on the entire Information Architecture: counts of tasks by state/status, identification of stale or blocked items, analysis of time-tracking data, etc. It then synthesizes this raw data, along with the day's numerological archetype, into the comprehensive "World State" document: the Daily Command Center (=DCC.org=).
+
+*** 4.4.2: The AI Tactical Planner (Session Plan Synthesis)
+This capability is a new, intelligent step embedded within an existing function, transforming the morning ritual from a simple templating action into a strategic briefing.
+- =life-os-begin-new-session= (Enhancement): This function is fundamentally redesigned. After creating the new =Session-XXX.org= file, it now automatically:
+  1. Reads the full contents of the pre-generated =DCC.org=.
+  2. Injects this content into a new master prompt, =8_Tactical_Planner.org=.
+  3. Calls the =life-os-call-ai= function.
+  4. Inserts the AI's synthesized, Org-mode formatted response (the "Daily Action Plan") directly into the =* 24h Outlook= section of the new session file.
+
+*** 4.4.3: The Strategic Scheduler (AI-Assisted Scheduling)
+This is the on-demand, user-facing scheduling component, designed for handling individual tasks as they arise.
+- =life-os-plan-my-schedule=: This function is triggered interactively by the user when they want to schedule a single =SCHEDULE-ME= task. It remains a crucial part of the workflow, serving as the ad-hoc counterpart to the holistic daily planning performed by the AI Tactical Planner. It assembles a task-specific context bundle (Annual Codex, Monthly Directive, etc.), consults the AI via the =7_Strategic_Scheduler.org= prompt, and presents the user with a set of optimal scheduling options.
+
+** 4.5: The Data Homeostasis Engine (Automated Housekeeping)
+This is a new, proposed functional group for v7, representing the implementation of the fourth Core Principle. These functions will be non-interactive and designed to be triggered by periodic =systemd= timers to maintain the health of the data layer without user intervention.
+
+- =life-os-process-priority-evolution=: A future function that will scan all canonical files for tasks whose priority should be escalated or de-escalated based on age and status.
+- =life-os-flag-stale-tasks=: A future function that will query for items marked =:STATUS: in-progress= but which have no =:DURATION:= updates within a defined period, and automatically apply a =:STALE:= tag.
+- =life-os-resolve-dependencies=: A future function designed to run after any state change. It will find tasks that were blocked by a now-completed item and automatically update their status from =backlog= to =next=, advancing workflows programmatically.
+
+
+* *Section 5: The Grand Workflow: A Life in the System*
 :PROPERTIES:
-:CUSTOM_ID: a.-group-1-foundational-utilities-api-data-processing
+:CUSTOM_ID: section-5-the-grand-workflow-a-life-in-the-system
 :END:
-These are the most fundamental building blocks, providing core I/O and
-communication capabilities.
+This section details the complete, end-to-end operational workflow of the LifeOS v7 system. It integrates all layers and components—from the automated =systemd= triggers to the AI Chief of Staff and the user's interactive Dashboards—into a cohesive daily and weekly cycle. This narrative demonstrates how the system's abstract design principles are realized through its concrete, implemented functions, providing a blueprint for the user's lived experience within the environment.
 
-- =life-os-call-ai=: The sole point of contact with the external Gemini
-  API.
-  - *Inputs:* =prompt-text= (string), =provider= (optional symbol, 'pro
-    or 'flash).
-  - *Process:* Constructs the API URL and JSON payload, retrieves the
-    API key via =auth-source=, sends the request via =plz=, and returns
-    the raw parsed JSON. It messages the user to indicate that a request
-    is in progress.
-  - *Dependencies:* =plz=, =json=, =auth-source=.
-  - *Outputs:* A raw, parsed JSON =alist= representing the AI's full
-    response.
-- =life-os-extract-text-from-ai-response=: A simple data extractor.
-  - *Inputs:* =ai-response-data= (the =alist= from =life-os-call-ai=).
-  - *Process:* Traverses the nested =alist= structure (=candidates= ->
-    =content= -> =parts= -> =text=).
-  - *Outputs:* A single string of the generated text, or an empty string
-    if no text is found.
-- =life-os-read-prompt=: The canonical function for loading AI prompt
-  templates.
-  - *Inputs:* =prompt-full-path= (string).
-  - *Process:* Checks for file existence and reads the entire file
-    content into a string.
-  - *Outputs:* The full string content of the specified prompt file.
+** 5.1: The Daily Loop
+The daily loop is the core rhythm of the LifeOS, moving through four distinct phases. It represents a complete cycle of automated synthesis, user-initiated planning, tactical execution, and disciplined closure.
 
-** *B. Group 2: Path Generation Helpers*
+*** 5.1.1: Phase 0: The Nightly Synthesis (Automated DCC Generation)
+- *Timestamp:* Approximately 04:00 daily.
+- *Trigger:* A non-interactive, scheduled trigger from the Automation Layer (=systemd= timer: =dcc-generation.timer=).
+- *System Actions:* The timer invokes the core of the Meta-Awareness Engine via an =emacsclient= call: the =life-os-generate-system-synthesis= function. This powerful, non-interactive process acts as the system's "nightly audit":
+  1.  *Data Ingestion:* It runs a comprehensive suite of =org-ql= queries across the entire canonical file system (=projects.org=, =disciplines.org=, =gaps.org=, etc.). It gathers exhaustive metrics on the current state of the "world": counts of tasks by state and priority, a list of stale or blocked items, progress against project goals, etc.
+  2.  *Numerological Context:* It calculates the upcoming day's Personal Day and determines which of the eight "Archetypal Days" it corresponds to (e.g., "PD 4 - Hard Work Day").
+  3.  *Report Generation:* It synthesizes these two streams of information—the raw system status and the energetic forecast—into a single, human-readable report. This complete document is then written to the canonical path for the new day's Daily Command Center (e.g., =~/journal/logs/2025/08/2025-08-16.org=).
+- *User Experience:* The user is entirely uninvolved. They sleep, trusting that their AI Chief of Staff is preparing a complete and deeply contextualized strategic briefing for the upcoming day's campaign.
+
+*** 5.1.2: Phase 1: The Awakening (Session Initialization)
+- *Timestamp:* The beginning of the user's workday (e.g., ~07:00).
+- *Trigger:* The user executes a single, intentional command via a global keybinding (`SPC j b` or equivalent), invoking the =life-os-begin-new-session= function.
+- *System Actions:* This interactive function orchestrates the "start of day" ritual.
+  1.  *Waking Metrics Capture:* The system first presents a series of interactive prompts to capture the user's initial state metrics (Energy, Focus, Mood, etc.). This data is saved directly to the properties drawer of the new session log.
+  2.  *Session Genesis & Cockpit Assembly:* The system creates the new =Session-XXX.org= file, increments the session counter, and arranges the user's graphical environment into the three-pane "Command Cockpit": the DCC on the left, the new (mostly blank) Session Log on the top-right, and a relevant Agenda view on the bottom-right.
+  3.  *AI Tactical Planning:* This is the crucial final step of initialization. The system takes the entire contents of the pre-generated DCC file, injects it into the master AI prompt =8_Tactical_Planner.org=, and calls the AI.
+  4.  *Plan Ingestion:* The AI's response—a tailored, Org-mode formatted "Daily Action Plan" synthesized from the DCC's strategic overview and aligned with the day's numerological archetype—is inserted directly under the =* 24h Outlook= heading in the new =Session-XXX.org= file.
+- *User Experience:* The user's day begins not with a blank page, but with a complete command environment. They have their strategic briefing (DCC), their personal workspace (Session Log), and a set of AI-generated, prioritized tactical recommendations for immediate action.
+
+*** 5.1.3: Phase 2: The Flow State (Capture, Triage, Action)
+- *Timestamp:* Throughout the workday.
+- *Trigger:* The natural flow of work, thoughts, and external interruptions.
+- *System Actions & User Experience:*
+  -   *Frictionless Capture:* A new idea for a system script arises. The user hits the capture key, selects the =IDEA= state, types the headline, adds an optional `:systems:` tag, and finalizes. The entry is appended to =inbox.org= and a pointer is added to the active =Session-XXX.org= file's notes section. The entire process takes seconds, with zero loss of focus on the primary task.
+  -   *Disciplined Triage:* At a designated "Triage Block," the user opens the `Tactical Cleanup Dashboard`. They work through their `inbox.org`. The aforementioned script idea is evaluated. They change its state from =IDEA= to =IMPL=, add a =:STATUS: backlog= property and a `[#C]` priority, and refile it to its canonical home in =systems.org=. A colleague's request is a =TASK= that gets scheduled and refiled to =projects.org=. An interesting but distracting article is captured as a =LINK= with `[#E]` priority and refiled to =rewards.org=. Within minutes, the inbox is at zero.
+
+*** 5.1.4: Phase 3: The Closing Bell (The Two-Stage Shutdown)
+- *Timestamp:* The end of the workday (e.g., ~17:00).
+- *Workflow:* The user executes a disciplined, two-stage shutdown protocol.
+  1.  **Stage 1 (Tactical Cleanup):** The user invokes the `Tactical Cleanup Dashboard` (`SPC j G`). This dedicated, multi-cockpit environment is their space to handle all end-of-day operational cleanup: committing all relevant code changes via the =magit= tab, processing any final items in =inbox.org= to zero, and reviewing the agenda. When they are finished and close the dashboard, the system creates the =pre-flight.lock= file, signaling that the day's work has been properly secured.
+  2.  **Stage 2 (Strategic Review):** The user invokes the `life-os-end-session-review` command (`SPC j e`). The system first verifies that the =pre-flight.lock= is recent. If it is, it assembles the simpler `Strategic Review Dashboard`, presenting the completed Session Log alongside the DCC. The user is prompted for their final closing metrics and "Closing Thoughts," which are saved to the Session Log. Upon completion, the system executes the final *Environmental Teardown*: the lock file is deleted, all graphical windows are closed, and the desktop is reset, leaving only a single, full-screen Emacs frame showing the *next* day's now-finalized DCC, priming the subconscious for the cycle to begin anew.
+
+** 5.2: The Rhythm of the System: The 8 Archetypal Days
+The "Daily Action Plan" generated in Phase 1 is not generic. Its content and focus are dynamically synthesized by the AI Tactical Planner based on the Archetypal Day classification provided in the DCC. This ensures the user's tactical focus is always aligned with the system's broader rhythm.
+
+*** 5.2.1: Defining the Daily Action Plan (AI Synthesis)
+The generation of the action plan is always the same process: the =life-os-begin-new-session= function provides the full DCC to the AI planner. The planner's prompt instructs it to analyze the "Energetic Outlook" section within that DCC and use it as the primary lens through which to interpret the "System Status" report, producing a plan that is contextually appropriate.
+
+*** 5.2.2: A Day of Hard Work (PD 4 Protocol)
+- *Input Energetic Outlook:* "Today is a PD 4, a Hard Work Day. The energy supports disciplined, foundational effort."
+- *AI Synthesis Example:* The AI will heavily prioritize items from the DCC's status report that are =IMPL= tasks, have a `:STATUS:= of =next= or =in-progress=, and have an =:EFFORT:= property indicating a substantial work block. It may de-emphasize or omit new =THNK= tasks, framing the Prime Directive as "Focus on clearing the existing implementation backlog."
+
+*** 5.2.3: A Day of Reflection (PD 7 Protocol)
+- *Input Energetic Outlook:* "Today is a PD 7, a Break Day for Reflection. The energy supports analysis, research, and quiet contemplation."
+- *AI Synthesis Example:* The AI will generate a radically different plan. It will de-prioritize =IMPL= tasks and instead highlight open items from =gaps.org=. Its "Mission Critical" list may include "Review notes on `:philosophy:`" from =knowledge.org= or "Process two backlogged =THNK= items." The Prime Directive might be "Strengthen the knowledge base and clarify future strategy."
+
+*** 5.2.4: (etc. for all 8 archetypes)
+This same synthetic process applies to all eight archetypes, ensuring that the user's session is always primed for optimal alignment with the day's potential, whether it be for social connection (PD 3), financial management (PD 8), or new beginnings (PD 1).
+
+
+* *Section 6: The Control Surface: User Interaction and Configuration*
 :PROPERTIES:
-:CUSTOM_ID: b.-group-2-path-generation-helpers
+:CUSTOM_ID: section-6-the-control-surface-user-interaction-and-configuration
 :END:
-This group of functions ensures that all files are written to and read
-from a single, canonical location. They enforce the system's directory
-structure.
+This section details the physical and digital interfaces through which the user—the Architect—interacts with and commands the LifeOS. The system's power is made accessible through a multi-layered, intentionally designed control surface that spans the entire desktop environment. This surface is designed for speed, ergonomics, and context-awareness, ensuring that invoking any system function is as frictionless as possible. The configuration of this surface is a core part of the system's "Literate Dotfiles" philosophy, with each layer being a readable, version-controlled text file.
 
-- =life-os--generate-annual-worksheet-path=, =...-annual-outlook-path=,
-  =...-monthly-worksheet-path=, =...-monthly-outlook-path=, etc.
-  - *Purpose:* To programmatically construct the absolute file path for
-    a specific review cycle artifact.
-  - *Inputs:* Typically =year-string= and =month-string=, or a
-    =date-range= =alist=.
-  - *Process:* Each function uses =expand-file-name= and =format= to
-    build a predictable, structured path (e.g.,
-    =~/journal/outlooks/YYYY/MM/YYYY-MM-Directive.org=).
-  - *Outputs:* A single, absolute file path string.
-- =life-os--generate-dcc-path=: Constructs the path for the Daily
-  Command Center.
-  - *Inputs:* =date= (optional time object).
-  - *Process:* Uses the current time if no date is provided, formatting
-    it into the =~/journal/logs/YYYY/MM/YYYY-MM-DD.org= structure.
-  - *Outputs:* A single, absolute file path string.
+** 6.1: Core Keybindings (lifeos-config.el)
+The =lifeos-config.el= file (or its literate =.org= equivalent) is the heart of the Emacs-internal control surface. It translates the raw capabilities defined in =lifeos.el= into interactive commands and binds them to the user's muscle memory. Its primary responsibilities are:
 
-** *C. Group 3: Numerology and Dynamic Data Helpers*
+-   *Key Chord Namespace:* It establishes the primary namespace for all LifeOS commands, typically under a leader key (e.g., =SPC j=), creating a predictable and easily discoverable command structure.
+-   *Hydra Definitions:* It contains the =defhydra= blocks for high-frequency, multi-stage commands like Quick Capture. The Hydra provides a text-based user interface that guides the user through selecting a `STATE` and `PRIORITY`, minimizing cognitive load for the most common capture operations.
+-   *Interactive Command Wrappers:* It defines the interactive =defun= blocks for all user-facing commands (e.g., `(defun life-os-begin-new-session () (interactive) ...)`). These functions are the "frontend" code that orchestrates calls to the "backend" functions in =lifeos.el=, manage window configurations, and provide user feedback via the echo area.
+-   *Package Configuration:* It uses declarative =use-package= blocks to manage all Emacs package configurations, including those that form parts of the LifeOS, ensuring the environment is reproducible and performant.
+
+** 6.2: Dashboard Interactions (The Cockpits)
+The "Dashboards" are the primary interfaces for deep work and structured, multi-step workflows. They are not persistent applications but are dynamically generated, self-contained environments assembled by functions in =lifeos-config.el=.
+
+-   *The Three-Pane Command Cockpit:* The standard morning interface generated by =life-os-begin-new-session=. It is a specific Emacs frame layout designed to present the three core streams of daily information (DCC, Session Log, Agenda) in a single, glanceable view. User interaction involves standard Emacs window navigation commands to move between the panes.
+-   *The Tactical Cleanup Dashboard:* A more complex, tabbed (or =persp-mode=) environment invoked on demand. Its interface is explicitly designed to guide the user through the distinct cognitive modes of the shutdown protocol:
+    -   *Triage Cockpit Tab:* The primary interaction is with =magit= and =org-mode= keybindings within the respective panes.
+    -   *Context Tabs:* Read-only views of the Session and DCCs to provide context without enabling accidental edits during the cleanup phase.
+-   *The Strategic Review Dashboard:* The final interface of the day. A simplified, two-pane view designed for focused reading and writing. The primary interaction is writing the "Closing Thoughts" and responding to the final metric capture prompts.
+
+** 6.3: Global Integration (xmonad.hs)
+The =xmonad.hs= configuration file elevates the LifeOS control surface from being Emacs-specific to desktop-global. It ensures that the Architect can interact with the Emacs "Kernel" without ever needing to focus an Emacs window first. This is a critical component for achieving ubiquitous, zero-friction capture and command invocation.
+
+-   *Global Keybindings:* =xmonad.hs= defines a set of global keyboard shortcuts that are active in any application. These bindings do not launch new Emacs instances; they use the =emacsclient= command-line tool to send commands directly to the running Emacs daemon. This provides near-instantaneous execution. For example, a global =Super-c= could be bound to `emacsclient -e '(org-capture)'`.
+-   *Frame Management & "Drawers":* A key part of the XMonad integration is managing the appearance of Emacs frames. The config contains rules that identify specific frames by title (e.g., "lifeos-hydra," "lifeos-capture") and automatically render them as "drawers"—small, temporary, floating windows at a fixed position on the screen—that do not disrupt the primary tiled layout. This prevents quick-capture actions from hijacking the entire screen, preserving the user's flow state.
+
+** 6.4: The Automated Layer (systemd user units)
+The =systemd= user unit files, typically located in =~/.config/systemd/user/=, constitute the "unseen" control surface. This is the layer of automation that operates on a schedule, independent of direct user interaction. This layer is what transforms the LifeOS from a set of tools into a proactive system.
+
+-   *Service Files (`.service`):* These files define a specific, single action the system should take. The primary service is =emacs-daemon.service=, which ensures the Kernel is always running. More advanced services, like =dcc-generation.service=, are defined as `Type=oneshot` services that execute a single =emacsclient= command to run a backend function (e.g., =life-os-generate-system-synthesis=) and then terminate.
+-   *Timer Files (`.timer`):* These files act as the triggers for the =.service= units. They define *when* an action should occur. For example, =dcc-generation.timer= is configured with an `OnCalendar=` directive to activate its corresponding service at 04:00 daily. Future timers for the Data Homeostasis Engine will be configured to run at different intervals (e.g., hourly or weekly) depending on the required cadence of the cleanup task. This layer provides the persistent, reliable "heartbeat" for the entire system's automated intelligence and maintenance.
+
+
+* *Section 7: Conclusion & Future Directives*
 :PROPERTIES:
-:CUSTOM_ID: c.-group-3-numerology-and-dynamic-data-helpers
+:CUSTOM_ID: section-7-conclusion-and-future-directives
 :END:
-This group is responsible for all time-based calculations and dynamic
-context generation.
+The LifeOS v7, as detailed in this blueprint, represents a fundamental paradigm shift in personal information management. It marks the transition from a collection of powerful but disparate tools to a single, cohesive, and intelligent whole. The system achieves a state of true environmental integration, where the operating system, the window manager, and the Emacs "Kernel" work in concert to create a frictionless and adaptive workspace.
 
-- *The Core Numerology Engine (=life-os--reduce-number=,
-  =...-calculate-personal-year=, =...-month=, =...-day=):* These are
-  pure functions that implement the numerological calculations.
-- =life-os-calculate-numerology-for-date=: The main entry point for the
-  numerology engine.
-  - *Inputs:* =target-date-string= ("YYYY-MM-DD").
-  - *Process:* orchestrates calls to the helper functions to calculate
-    PY, PM, and PD, and combines them with the hard-coded Life Path and
-    Annual Essence.
-  - *Outputs:* An =alist= of all numerological data for the given date.
-    e.g., ='((life-path . 5) (personal-year . 7) ...)=
-- *Date Range and Sequence Helpers
-  (=life-os--get-previous-month-date-range=,
-  =life-os--get-bridge-cycle-date-range=,
-  =life-os--find-next-pd-with-num=):* These are specialized date logic
-  functions used by the Review Cycle Engine and Scheduler to define the
-  scope of operations.
+The core achievement of this architecture is the creation of a **closed-loop, self-organizing system.** The output of one cycle—a day's session log, a week's worth of accumulated data—becomes the primary input for the next cycle's automated synthesis phase. The AI Chief of Staff does not operate on static instructions but on the rich, evolving ground truth of the user's own activity. This establishes a powerful feedback loop where the system learns from the user's behavior to provide increasingly tailored and insightful guidance. The user's role is successfully elevated from that of a manual manager of lists and files to a strategic commander who consumes AI-synthesized intelligence, acts within a purpose-built environment, and, through those actions, produces the very data that fuels the next iteration of the loop.
 
-** *D. Group 4: Context-Gathering Helpers*
-:PROPERTIES:
-:CUSTOM_ID: d.-group-4-context-gathering-helpers
-:END:
-This crucial group is responsible for reading the Data Layer and
-assembling the context required by the AI Layer.
+This blueprint provides the complete specification for the architecture and operation of this system. What follows are the strategic directives for its future evolution, ensuring that development continues in alignment with its core principles.
 
-- =life-os--get-annual-codex-content=,
-  =life-os--get-monthly-directive-content=,
-  =life-os--get-cycle-outlook-content=: Each of these functions takes a
-  date-string as input, uses the Path Generation helpers to find the
-  relevant outlook file, and returns its full content as a string. They
-  include warning messages if a file is not found.
-- =life-os--get-dcc-history=: Takes a start and end date string. It
-  iterates through each day in the range, constructs the path to that
-  day's DCC, and concatenates the content of all found DCCs into a
-  single large string.
-- =life-os--get-global-task-horizon=: Uses =org-ql= to find all
-  headlines in =org-agenda-files= that do not have a =DONE= state and
-  formats them into a single string for AI consumption.
-- =life-os--get-latest-session-log=: Finds and returns the path to the
-  highest-numbered session log, which is the primary source of
-  "yesterday's data" for the DCC generation.
-- =life-os--assemble-strategic-scheduling-context=: This is a
-  "meta-gatherer." It accepts a task marker and calls multiple other
-  context-gathering helpers (=get-annual-codex=,
-  =get-monthly-directive=, etc.) to build the complete, composite
-  context block required by the =7_Strategic_Scheduler.org= prompt.
+** 7.1: Immediate Implementation Priorities
+The architecture is designed, but the construction requires a phased approach. The following components are identified as the highest-priority targets for initial implementation to bring v7 to an operational state.
 
-** *E. Group 5: The Review Cycle Engine*
-:PROPERTIES:
-:CUSTOM_ID: e.-group-5-the-review-cycle-engine
-:END:
-This is the system's "operating system," responsible for orchestrating
-the multi-phase review and synthesis cycles.
+1.  *Information Architecture Implementation:* The most critical first step is the "terraforming" of the `~/journal/` directory. This involves creating the canonical =.org= files and migrating existing, unstructured data into the new, defined homes.
+2.  *The AI Tactical Planner:* The core of the new daily workflow. This requires creating the `8_Tactical_Planner.org` master prompt and modifying the `life-os-begin-new-session` function to handle the AI synthesis step.
+3.  *The Meta-Awareness Engine (Minimum Viable Product):* The full DCC generation is complex. The MVP will focus on successfully querying for task counts by state/priority and calculating the day's numerological archetype, providing the essential context for the Tactical Planner.
+4.  *The Two-Stage Shutdown Dashboards:* Implementing the interactive functions to generate the "Tactical Cleanup" and "Strategic Review" dashboards is essential for realizing the new, disciplined session closure workflow.
 
-- =life-os-run-review-cycle=: The main entry point for any review.
-  - *Inputs:* A configuration =plist= (e.g.,
-    =life-os-config--bridge-review=).
-  - *Process:*
-    1. Reads the =:date-logic= function from the config and calls it to
-       determine the correct date range for the review.
-    2. Initiates Phase A of the review by calling
-       =life-os--execute-review-phase=.
-  - *Dependencies:* Critically depends on the =life-os-config--...=
-    plists which define the prompts and context-gatherers for each
-    review type.
-- =life-os--execute-review-phase=: The workhorse for all reviews.
-  - *Inputs:* A =phase-config= plist, the top-level =config=, the
-    =date-range=, extra context (like user answers from Phase A), and
-    the minor mode to activate.
-  - *Process:*
-    1. Loads the appropriate prompt file specified in the
-       =phase-config=.
-    2. Iterates through the =:context-gatherers= defined in the config.
-       For each one, it calls the specified =:source-fn= and injects the
-       resulting data string into the prompt's placeholder. This is the
-       core data-injection loop.
-    3. Calls =life-os-call-ai= with the final, populated prompt.
-    4. Displays the extracted text in a special =*LifeOS Review*=
-       buffer.
-    5. Attaches the current configuration and date range to buffer-local
-       variables.
-    6. Activates the appropriate minor mode (=life-os-phase-a-mode= or
-       =life-os-phase-b-mode=).
-- =life-os-save-and-proceed-correction-buffer= &
-  =life-os-save-final-outlook-buffer=: Interactive commands bound to
-  =C-c C-c= in the special review buffers. They read the buffer-local
-  state variables, use the Path Generation helpers to determine the
-  correct output file, save the buffer's content, and either proceed to
-  Phase B or terminate the review cycle.
+** 7.2: Mid-Term Development Goals
+Once the core v7 loop is stable, development should focus on deepening the system's intelligence and self-maintenance capabilities.
 
-** *F. Group 6: Capture Gears (User Input)*
-:PROPERTIES:
-:CUSTOM_ID: f.-group-6-capture-gears-user-input
-:END:
-This group of functions provides the user with different "gears" for
-capturing information with varying levels of friction and detail. The
-common principle is that they all create a task in a central location
-(=inbox.org=) and then append a pointer to the active log file using
-=life-os--append-to-active-log-inbox=.
+1.  *Data Homeostasis Engine:* Begin implementing the automated housekeeping functions, starting with the highest-value rule: flagging stale "in-progress" tasks. This will be the first step in making the system truly self-organizing.
+2.  *Advanced Meta-Awareness:* Evolve the DCC generation engine to include more sophisticated analytics, such as parsing `org-clock` data to report on time spent per category and comparing it against goals.
+3.  *AI-Assisted Triage:* Introduce an experimental feature where, during triage, the user can ask an AI to *suggest* a destination file and a set of relevant tags for an inbox item, further reducing the cognitive load of processing.
 
-- =life-os--quick-capture-action=: *(2nd Gear)* The backend for the
-  high-velocity =hydra= capture system.
-  - *Inputs:* =state= (e.g., "TODO"), =priority= (e.g., "A"). These are
-    provided by the =hydra= frontend.
-  - *Process:*
-    1. Interactively prompts the user for just the headline text.
-    2. Constructs a full Org-mode entry string, including a new =:ID:=,
-       =:CREATED:= timestamp, and the provided =state= and =priority=.
-    3. Appends this full entry to =~/journal/inbox.org= via
-       =life-os--append-to-file-robust=.
-    4. Constructs a compact pointer string
-       (=- STATE [#P] Headline [[id:...]]=).
-    5. Appends the pointer to the active log via
-       =life-os--append-to-active-log-inbox=.
-  - *Key Design:* Optimized for speed; gathers minimal information and
-    performs no scheduling.
-- =life-os-interactive-capture=: *(3rd Gear)* A comprehensive wizard for
-  deeply-contextualized capture.
-  - *Inputs:* None (it is fully interactive).
-  - *Process:*
-    1. Interactively prompts the user for: headline, state, priority,
-       tags, properties, and an optional parent Epic.
-    2. To facilitate parenting, it calls =life-os-update-parent-cache=
-       to ensure the list of potential Epics is current.
-    3. Constructs a full Org-mode entry in the same manner as quick
-       capture, but includes all the additional metadata (=:PARENT:=,
-       user-defined properties, etc.) in the =:PROPERTIES:= drawer.
-    4. Performs the same append-and-point logic as quick capture.
-  - *Key Design:* Optimized for detail; used when a task requires
-    significant context at the moment of capture.
-- =life-os-promote-note-to-task=: *(Escalation Path)* Converts
-  unstructured text into a structured task.
-  - *Inputs:* None (operates on the line at point).
-  - *Process:*
-    1. Extracts the clean text content from the current line.
-    2. Temporarily redefines the =read-string= function to use this
-       extracted text as the /initial input/ for the "Main Item" prompt.
-    3. Calls =life-os-interactive-capture=. The user experiences the
-       full capture wizard, but with the main headline already
-       pre-filled.
-    4. After the capture wizard successfully completes, it deletes the
-       original plain text line from the source buffer.
-  - *Key Design:* Provides a seamless escalation path from fleeting
-    notes to formal tasks without copy-pasting.
+** 7.3: Long-Term Vision & Philosophical Trajectory
+The ultimate goal of the LifeOS is to become a true "second brain"—not just a repository of knowledge, but a partner in thought that actively assists in the process of learning, creating, and deciding.
 
-** *G. Group 7: The Scheduling Suite (Manual & AI-Assisted)*
-:PROPERTIES:
-:CUSTOM_ID: g.-group-7-the-scheduling-suite-manual-ai-assisted
-:END:
-This suite provides the mechanisms for applying =SCHEDULED= and
-=DEADLINE= timestamps to existing tasks.
+1.  *Emergent Strategy:* As the system gathers more data on the user's workflows and thought patterns, the AI Chief of Staff's role will evolve from tactical planning to *strategic suggestion*. It may eventually identify meta-patterns in the user's behavior and propose new routines, projects, or areas of study that the user themselves may not have considered.
+2.  *Seamless Knowledge Integration:* The boundary between the LifeOS and the external world will continue to blur. Future integrations may involve pipelines that automatically ingest highlights from e-readers or transcripts from conversations, feeding them into the triage system.
+3.  *The Conversational Interface:* While the current design prioritizes non-interactive synthesis, the long-term vision includes a limited, purpose-driven conversational interface. The user might ask, "What are the three most important things I need to know about `:project-phoenix:` right now?", and the system would perform a real-time synthesis of the relevant data, presenting a concise, actionable answer.
 
-- *The Dynamic Org Capture Scheduler (=life-os-launch-scheduler=,
-  =...--scheduler-capture-template=,
-  =...--scheduler-finalize-selection=):* This is the manual, UI-driven
-  scheduling component.
-  - =life-os-launch-scheduler=: The entry point. It programmatically
-    creates a temporary =org-capture= template and invokes a blocking
-    capture session. Upon completion, it returns the user's selected
-    date =alist=.
-  - =life-os--scheduler-capture-template=: The UI renderer. It is called
-    /by/ =org-capture= to generate the buffer's content. It calls
-    helpers like =life-os--scheduler-get-heuristic-dates= and
-    =...-numerology-dates= to get data, formats each as a selectable
-    line, and uses =propertize= to attach the full data =alist= to its
-    corresponding line.
-  - =life-os--scheduler-finalize-selection=: The "commit" button
-    (=C-c C-c=). It reads the =alist= from the current line's text
-    properties and saves it before finalizing the capture session.
-- *The AI Strategic Scheduler (=life-os-plan-my-schedule=,
-  =...--parse-ai-scheduling-options=, =...--commit-ai-schedule=):* This
-  is the AI-driven planning component.
-  - =life-os-plan-my-schedule=: The orchestrator. It calls
-    =life-os--get-tasks-to-schedule= to find tasks,
-    =life-os--assemble-strategic-scheduling-context= to build the prompt
-    context, calls the AI via prompt =7=, parses the response with
-    =life-os--parse-ai-scheduling-options=, and then renders the
-    interactive =*LifeOS Action Review*= buffer.
-  - =life-os--parse-ai-scheduling-options=: A dedicated parser for the
-    AI's specific Org-mode list output format.
-  - =life-os--commit-ai-schedule=: The "commit" button. It reads the
-    selected option, jumps to the source task, changes its state to
-    =AI-REC=, and applies the timestamp. It is also the trigger point
-    for the *Action Engine*.
-- *The Action Engine (=life-os--create-confirmation-child-task=,
-  =life-os--update-parent-on-confirmation=):* The hierarchical
-  automation component.
-  - =life-os--commit-ai-schedule= (enhancement): After committing a
-    schedule for an =APPT= task, it now inspects its properties and
-    calls =life-os--create-confirmation-child-task=.
-  - =life-os--create-confirmation-child-task=: Constructs and files a
-    high-priority =NEXT= task with a deadline and a =:PARENT:= ID link
-    back to the appointment.
-  - =life-os--update-parent-on-confirmation=: An
-    =org-after-todo-state-change-hook=. It runs on /every/ state change.
-    It checks if a task is being marked =DONE= and if that task has a
-    =:PARENT:= property. If so, it finds the parent and updates its
-    =:Confirmed_External:= status, closing the feedback loop.
-
-** *H. Group 8: The Session-Based Architecture*
-:PROPERTIES:
-:CUSTOM_ID: h.-group-8-the-session-based-architecture
-:END:
-This suite manages the lifecycle of the user's core work environment.
-
-- *State Management (=life-os--get-session-counter=,
-  =...--increment-and-get-session-counter=):* Simple file I/O functions
-  that read and write the integer value in
-  =~/journal/.system/session.org=.
-- =life-os-begin-new-session=: The "start of day" command.
-  - Increments the session counter.
-  - Creates a new =Session-XXX.org= file from a hard-coded template.
-    This template /must/ include the =* Metrics Checklist= and
-    =* Inbox / Fleeting Notes= headings.
-  - Calls =life-os--inject-habit-templates= to query =habits.org= and
-    inject daily habit checklists into the =* Metrics Checklist=
-    section.
-  - Opens the new file for the user.
-- =life-os-end-session-review=: The "end of day" command.
-  - Uses =life-os--get-active-log-file= to identify the correct session
-    log to finalize.
-  - Interactively prompts the user for post-session metrics.
-  - Opens the session log in the background and writes these metrics to
-    the =:PROPERTIES:= drawer using =org-entry-put=.
-- =life-os--get-active-log-file=: A critical pointer function used
-  throughout the system. It finds the highest-numbered session log and
-  returns its path. It contains a fallback to return the path to today's
-  DCC if no session is active, ensuring capture functionality is never
-  broken.
-
-
-* *Section 5: The Grand Workflow (A Day in the LifeOS)*
-:PROPERTIES:
-:CUSTOM_ID: section-5-the-grand-workflow-a-day-in-the-lifeos
-:END:
-This section details the complete, end-to-end operational workflow of
-the LifeOS system, integrating all layers and components into a cohesive
-daily cycle. This narrative demonstrates how the system's design
-principles are realized through its implemented functions.
-
-** *Phase 0: Pre-Session (Automated Nightly Operations)*
-:PROPERTIES:
-:CUSTOM_ID: phase-0-pre-session-automated-nightly-operations
-:END:
-- *Timestamp:* =~04:00=
-- *Trigger:* An external =systemd= user timer (=intel-briefing.timer=
-  from the System Codex) executes a command:
-  =emacsclient --eval '(life-os-generate-daily-plan)'=.
-- *System Actions:*
-  1. The =life-os-generate-daily-plan= function in =lifeos.el= is
-     invoked non-interactively.
-  2. The function determines the path of the most recently completed
-     session log, =Session-041.org=, using
-     =life-os--get-latest-session-log=. It reads the entire file
-     content, including the user's closing thoughts and the finalized
-     =:PROPERTIES:= drawer.
-  3. It gathers all other required contexts: the Annual Codex, Monthly
-     Directive, the current global task list (from
-     =life-os--get-global-task-horizon=), and today's numerology.
-  4. This massive context string is injected into the master prompt from
-     =5_Daily_Gen.org=.
-  5. =life-os-call-ai= sends the request to the Gemini API.
-  6. The AI response---the full Org-mode text of a new Daily Command
-     Center---is received.
-  7. The system writes this text to the canonical path for today, e.g.,
-     =~/journal/logs/2025/07/2025-07-25.org=.
-- *User Experience:* The user is asleep. The system prepares the field
-  for the next day's campaign without any human intervention.
-
-** *Phase 1: Session Initialization (The Morning Ritual)*
-:PROPERTIES:
-:CUSTOM_ID: phase-1-session-initialization-the-morning-ritual
-:END:
-- *Timestamp:* =~07:00=
-- *Trigger:* The user executes the =SPC j b= keybinding.
-- *System Actions:*
-  1. =life-os-begin-new-session= is called.
-  2. =life-os--increment-and-get-session-counter= reads
-     =~/.system/session.org=, increments the number from =41= to =42=,
-     and writes it back.
-  3. A new file, =~/journal/logs/sessions/Session-042.org=, is created
-     with the standard template, including headings like
-     =* Metrics Checklist= and =* Inbox / Fleeting Notes=.
-  4. =life-os--inject-habit-templates= is called. It opens
-     =~/journal/templates/habits.org=, queries for all headlines with
-     the =:Habit:daily:= tag, and appends them as =* TODO= items under
-     the =* Metrics Checklist= heading in =Session-042.org=.
-  5. The system opens =Session-042.org= for the user.
-- *User Experience:* The user begins their day by reviewing the
-  AI-generated DCC from Phase 0 to understand their strategic context.
-  They then press =SPC j b=, and their personal, templated workspace for
-  the day appears, pre-populated with their required habit checks.
-
-** *Phase 2: Operational Flow (Capture and Action)*
-:PROPERTIES:
-:CUSTOM_ID: phase-2-operational-flow-capture-and-action
-:END:
-- *Timestamp:* =Throughout the day=
-- *Workflow A: Low-Friction Task Capture*
-  - *Trigger:* An urgent but simple task arises. The user executes the
-    =hydra= via =SPC j t=.
-  - *System Actions:* =life-os--quick-capture-action= prompts for a
-    headline. The task is created with a new ID in =inbox.org=.
-    =life-os--append-to-active-log-inbox= is called, which gets the path
-    to =Session-042.org= (via =life-os--get-active-log-file=) and
-    appends a pointer to the new task under the
-    =* Inbox / Fleeting Notes= heading.
-  - *User Experience:* The thought is captured and contextualized to the
-    current session in under 5 seconds with zero change in focus.
-- *Workflow B: Deep Context Capture & Scheduling*
-  - *Trigger:* A new, complex appointment is scheduled. It needs
-    metadata and a confirmation. The user captures it via
-    =life-os-interactive-capture= (=SPC j c=), marking it as an =APPT=,
-    giving it a =:Confirm_With: "client@example.com"=, and changing its
-    state to =SCHEDULE-ME=.
-  - *System Actions & User Experience:*
-    1. Later, during a planning block, the user runs the AI Planner with
-       =SPC j P= (=life-os-plan-my-schedule=).
-    2. The system finds the =SCHEDULE-ME= appointment and assembles the
-       strategic context.
-    3. The user is presented with the =*LifeOS Action Review*= buffer
-       containing AI-generated scheduling options. They select the best
-       one and press =C-c C-c=.
-    4. =life-os--commit-ai-schedule= runs. The appointment in
-       =inbox.org= is timestamped and its state changes to =AI-REC=. A
-       default property =:Confirmed_External: no= is added.
-    5. Because the original task was an =APPT= and has the
-       =:Confirm_With:= property, the *Action Engine* triggers.
-       =life-os--create-confirmation-child-task= creates a
-       =* NEXT [#A] Confirm Appt: ...= task in =inbox.org= with a
-       deadline 2 days prior to the appointment and a =:PARENT:= ID
-       link. A pointer to this new confirmation task is appended to
-       =Session-042.org=.
-
-** *Phase 3: Session Finalization (The Evening Review)*
-:PROPERTIES:
-:CUSTOM_ID: phase-3-session-finalization-the-evening-review
-:END:
-- *Timestamp:* =~17:00=
-- *Trigger:* The user ends their workday by executing =SPC j e=.
-- *System Actions:*
-  1. =life-os-end-session-review= is called. It prompts the user for
-     final metrics (focus, energy, hours, etc.).
-  2. The function opens =Session-042.org= in the background and writes
-     these metrics into its =:PROPERTIES:= drawer.
-- *User Experience:* The user adds their subjective summary of the day
-  to the =* Closing Thoughts= section and saves the file. The
-  operational log is now a complete, data-rich record of the day's
-  campaign, ready to serve as the primary input for tomorrow's AI
-  briefing. The cycle is complete.
-
-
-* *Section 6: Conclusion*
-:PROPERTIES:
-:CUSTOM_ID: section-6-conclusion
-:END:
-The LifeOS is a closed-loop system. The output of one cycle (a completed
-session log) becomes the primary input for the next cycle's automated
-planning phase. The user's role shifts from a manual manager of lists to
-a strategic commander who consumes AI-synthesized intelligence, acts
-within a purpose-built environment, and produces data-rich artifacts
-that fuel the next iteration of the loop. This blueprint provides the
-complete specification for the architecture and operation of this
-system.
+This blueprint is not an endpoint; it is the foundation for a continuously evolving relationship between the Architect and their system. By adhering to the core principles laid out within this document, the LifeOS is poised to become an indispensable tool for a life of clarity, focus, and purposeful action.

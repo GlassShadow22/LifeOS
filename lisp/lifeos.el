@@ -1937,5 +1937,14 @@ It consumes DCC, Full-Progress, and Session-Log data, then calls an AI prompt."
       )
     (if (string-empty-p waking-thoughts) "No waking thoughts recorded." waking-thoughts)))
 
+(defun life-os-generate-daily-worksheet-wrapper ()
+  "Wrapper to call `life-os-generate-daily-worksheet' interactively."
+  (interactive)
+  (life-os-generate-daily-worksheet))
+
+(defun life-os-generate-daily-context-canvas-wrapper ()
+  "Wrapper to call `life-os-generate-daily-context-canvas' interactively."
+  (interactive)
+  (life-os-generate-daily-context-canvas))
 
 (provide 'lifeos)
