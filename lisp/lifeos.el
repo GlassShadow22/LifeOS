@@ -1507,5 +1507,264 @@ This implements part of the Hierarchical Action Engine described in the Operatio
   (interactive)
   (life-os-refile-and-transition-state))
 
+;; --- Nightly Auditor: Full Progress Snapshot Generator (Spec-5B) ---
+
+(defun life-os--get-full-progress-output-path ()
+  "Determine the canonical file path for today's Full-Progress snapshot."
+  (let ((today-str (format-time-string "%Y-%m-%d")))
+    (expand-file-name (format "%s-Full-Progress.org" today-str) life-os-system-dir)))
+
+(defun life-os--get-previous-full-progress-path ()
+  "Find the path of the most recent Full-Progress snapshot."
+  ;; A simple approach: find the latest file matching the pattern in the system dir.
+  ;; A more robust approach might use a log or database.
+  (let* ((system-dir life-os-system-dir)
+         (pattern (concat system-dir "/*-Full-Progress.org"))
+         (files (file-expand-wildcards pattern))
+         (sorted-files (sort files #'file-newer-than-file-p)))
+    (car sorted-files))) ; Return the newest one, or nil if none found.
+
+(defun life-os--parse-tasks-from-file (file-path)
+  "Parse TODO tasks from a single Org file and return a hash table of ID -> state."
+  (let ((task-ht (make-hash-table :test 'equal)))
+    (with-temp-buffer
+      (insert-file-contents file-path)
+      (org-mode) ; Ensure Org mode is active for parsing
+      (goto-char (point-min))
+      (while (re-search-forward org-todo-line-regexp nil t)
+        (let* ((element (org-element-at-point))
+               (type (org-element-type element)))
+          ;; Only process headlines
+          (when (eq type 'headline)
+            (let ((id (org-element-property :ID element))
+                  (todo-keyword (org-element-property :todo-keyword element)))
+              ;; Only store tasks with an ID
+              (when id
+                (puthash id todo-keyword task-ht)))))))
+    task-ht))
+
+(defun life-os--parse-all-live-tasks ()
+  "Parse TODO tasks from all files in `org-agenda-files`."
+  (let ((all-tasks-ht (make-hash-table :test 'equal)))
+    (dolist (file org-agenda-files)
+      (let ((file-tasks-ht (life-os--parse-tasks-from-file file)))
+        ;; Merge into the main hash table
+        (maphash (lambda (id state) (puthash id state all-tasks-ht)) file-tasks-ht)))
+    all-tasks-ht))
+
+(defun life-os--load-previous-state (previous-snapshot-path)
+  "Load the task states from the previous snapshot file."
+  (let ((prev-state-ht (make-hash-table :test 'equal)))
+    (when (and previous-snapshot-path (file-exists-p previous-snapshot-path))
+      (with-temp-buffer
+        (insert-file-contents previous-snapshot-path)
+        (goto-char (point-min))
+        ;; Assuming the format is consistent and tasks are listed like:
+        ;; - State Change: [[id:task-1]] (NEXT -> IMPL)
+        ;; - New Task: [[id:task-new]] in projects.org (STATE: NEXT)
+        ;; - Completed: [[id:task-done]] (STATE: DONE)
+        ;; We need to parse the "Diff" section.
+        ;; A more robust way is to parse structured data if the snapshot has it.
+        ;; For now, let's assume it parses the *Diff* section.
+        (when (re-search-forward "^\\* Diff from " nil t)
+          ;; Search for lines starting with - until the next heading
+          (while (and (not (looking-at "^\\* ")) (re-search-forward "^- \\(.*\\)" nil t))
+            (let ((line (match-string-no-properties 1)))
+              ;; Parse line like "State Change: [[id:task-1]] (NEXT -> IMPL)"
+              (when (string-match "\\[\\[id:\\([^]]+\\)\\]\\] (\\([^ ]+\\) -> \\([^)]+\\))" line)
+                (let ((id (match-string 1 line))
+                      ;; (old-state (match-string 2 line)) ; Not needed for comparison logic
+                      (new-state (match-string 3 line)))
+                  (puthash id new-state prev-state-ht)))
+              ;; Parse line like "New Task: [[id:task-new]] ... (STATE: NEXT)"
+              (when (string-match "\\[\\[id:\\([^]]+\\)\\]\\] .* (STATE: \\([^)]+\\))" line)
+                (let ((id (match-string 1 line))
+                      (state (match-string 2 line)))
+                  (puthash id state prev-state-ht)))
+              ;; Parse line like "Completed: [[id:task-done]] (STATE: DONE)"
+              (when (string-match "\\[\\[id:\\([^]]+\\)\\]\\] (STATE: \\([^)]+\\))" line)
+                (let ((id (match-string 1 line))
+                      (state (match-string 2 line)))
+                  (puthash id state prev-state-ht))))))))
+    prev-state-ht))
+
+(defun life-os-generate-full-progress-snapshot ()
+  "Generate the Full-Progress.org snapshot for today. (Spec-5B)"
+  (interactive) ; Can be run interactively for testing
+  (let* ((output-path (life-os--get-full-progress-output-path))
+         (previous-snapshot-path (life-os--get-previous-full-progress-path))
+         (live-tasks-ht (life-os--parse-all-live-tasks))
+         (previous-state-ht (life-os--load-previous-state previous-snapshot-path))
+         (new-tasks '())
+         (state-changes '())
+         (completed-or-killed-tasks '())
+         (system-wide-metrics (life-os--calculate-system-wide-metrics live-tasks-ht))
+         )
+
+    ;; --- Core Logic: Step-by-Step Execution (Spec-5B) ---
+    ;; Step 4: Compare States
+    (maphash
+     (lambda (id current-state)
+       (let ((previous-state (gethash id previous-state-ht)))
+         (cond
+          ((null previous-state) ; New task
+           (push `(:id ,id :state ,current-state :file ,(life-os--find-file-for-id id)) new-tasks))
+          ((not (string= current-state previous-state)) ; State changed
+           (push `(:id ,id :from ,previous-state :to ,current-state :headline ,(life-os--get-headline-for-id id)) state-changes)))))
+     live-tasks-ht)
+
+    ;; Step 4 (cont): Find completed/killed tasks
+    (maphash
+     (lambda (id previous-state)
+       (unless (gethash id live-tasks-ht)
+         ;; Task existed yesterday but not today, assume terminal state transition
+         (push `(:id ,id :state ,previous-state :headline ,(life-os--get-headline-for-id id)) completed-or-killed-tasks)))
+     previous-state-ht)
+
+    ;; Step 5: Assemble the Output File
+    (with-temp-file output-path
+      (insert (format "#+TITLE: Full Progress Snapshot for %s\n" (format-time-string "%Y-%m-%d")))
+      (insert (format "#+DATE: %s\n\n" (format-time-string "[%Y-%m-%d %a %H:%M]")))
+
+      ;; System-Wide Metrics
+      (insert "* System-Wide Metrics:\n:PROPERTIES:\n")
+      (dolist (metric system-wide-metrics)
+        (insert (format ":%s: %s\n" (car metric) (cdr metric))))
+      (insert ":END:\n\n")
+
+      ;; Diff Section
+      (insert "* Diff from ")
+      (if previous-snapshot-path
+          (insert (format "%s\n" (file-name-base previous-snapshot-path)))
+        (insert "No Previous Snapshot\n"))
+      (insert "\n")
+
+      ;; State Changes
+      (unless (null state-changes)
+        (insert "** State Changes\n")
+        (dolist (change (reverse state-changes)) ; Reverse to maintain order found
+          (insert (format "- State Change: [[id:%s]] (%s -> %s) :: %s\n"
+                          (plist-get change :id)
+                          (plist-get change :from)
+                          (plist-get change :to)
+                          (or (plist-get change :headline) ""))))
+        (insert "\n"))
+
+      ;; New Tasks
+      (unless (null new-tasks)
+        (insert "** New Tasks\n")
+        (dolist (task (reverse new-tasks))
+          (insert (format "- New Task: [[id:%s]] in %s (STATE: %s)\n"
+                          (plist-get task :id)
+                          (or (plist-get task :file) "Unknown")
+                          (plist-get task :state))))
+        (insert "\n"))
+
+      ;; Completed/Killed Tasks
+      (unless (null completed-or-killed-tasks)
+        (insert "** Completed or Killed Tasks\n")
+        (dolist (task (reverse completed-or-killed-tasks))
+          (insert (format "- Completed/Killed: [[id:%s]] (STATE: %s) :: %s\n"
+                          (plist-get task :id)
+                          (plist-get task :state)
+                          (or (plist-get task :headline) ""))))
+        (insert "\n"))
+
+      ;; Active States Sections (e.g., IMPL, NEXT, HOLD, WAIT)
+      ;; This is a simplified version. A full implementation would iterate
+      ;; through relevant states and files.
+      (dolist (state '("NEXT" "WAIT" "IN-PROGRESS")) ; Use v7.3 states
+        (let ((tasks-in-state (life-os--get-tasks-by-state live-tasks-ht state)))
+          (unless (null tasks-in-state)
+            (insert (format "* Active Items (:STATE \"%s\")\n" state))
+            ;; Group by file (simplified)
+            (let ((tasks-by-file (life-os--group-tasks-by-file tasks-in-state)))
+              (dolist (file-entry tasks-by-file)
+                (let ((file-name (car file-entry))
+                      (file-tasks (cdr file-entry)))
+                  (insert (format "** %s\n" file-name))
+                  (dolist (task file-tasks)
+                    (insert (format "- %s [[id:%s]] %s\n"
+                                    state ; Or full headline if parsed
+                                    (plist-get task :id)
+                                    (or (plist-get task :headline) "Headline N/A")))))))
+            (insert "\n"))))
+
+      ;; Final message
+      (goto-char (point-min))
+      )
+    (message "Full-Progress snapshot generated at: %s" output-path)
+    t)) ; Return t on success
+
+;; --- Helper functions for Full Progress (Placeholders to be fleshed out) ---
+(defun life-os--calculate-system-wide-metrics (live-tasks-ht)
+  "Calculate system-wide metrics like total tasks, tasks by state."
+  ;; Placeholder implementation
+  (let ((total-tasks (hash-table-count live-tasks-ht))
+        (impl-count 0)
+        (next-count 0)
+        (wait-count 0)
+        ;; Add counters for other states as needed
+        )
+    (maphash (lambda (_id state)
+               (cond
+                ((string= state "IN-PROGRESS") (cl-incf impl-count))
+                ((string= state "NEXT") (cl-incf next-count))
+                ((string= state "WAIT") (cl-incf wait-count))
+                ;; Add more conditions
+                ))
+             live-tasks-ht)
+    `((:TASKS_TOTAL . ,total-tasks)
+      (:TASKS_IMPL . ,impl-count)
+      (:TASKS_NEXT . ,next-count)
+      (:TASKS_WAIT . ,wait-count)
+      ;; Add more metrics
+      )))
+
+(defun life-os--find-file-for-id (id)
+  "Find the file path containing the entry with the given ID."
+  ;; This is a simplified version. org-id-find is more robust.
+  (let ((location (org-id-find id)))
+    (if location (car location) "Unknown File")))
+
+(defun life-os--get-headline-for-id (id)
+  "Get the headline text for the entry with the given ID."
+  (let ((location (org-id-find id 'marker)))
+    (if location
+        (with-current-buffer (marker-buffer location)
+          (goto-char location)
+          (org-get-heading t t)) ; t t means no tags, no priority
+      "Headline N/A")))
+
+(defun life-os--get-tasks-by-state (tasks-ht state)
+  "Get a list of task plists from the hash table that match the given state."
+  (let (result)
+    (maphash (lambda (id task-state)
+               (when (string= task-state state)
+                 (push `(:id ,id :state ,task-state :headline ,(life-os--get-headline-for-id id)) result)))
+             tasks-ht)
+    result))
+
+(defun life-os--group-tasks-by-file (task-list)
+  "Group a list of task plists by their file path."
+  (let ((groups (make-hash-table :test 'equal)))
+    (dolist (task task-list)
+      (let* ((id (plist-get task :id))
+             (file-path (life-os--find-file-for-id id))
+             (current-group (gethash file-path groups '())))
+        (puthash file-path (cons task current-group) groups)))
+    ;; Convert hash table to list of (file . tasks) pairs
+    (let (result)
+      (maphash (lambda (file tasks) (push (cons file tasks) result)) groups)
+      result)))
+
+;; Ensure the interactive command is available
+;;;###autoload
+(defun life-os-generate-full-progress-snapshot-wrapper ()
+  "Wrapper to call `life-os-generate-full-progress-snapshot' interactively."
+  (interactive)
+  (life-os-generate-full-progress-snapshot))
+
+
 
 (provide 'lifeos)
