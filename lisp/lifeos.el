@@ -2079,4 +2079,47 @@ This function is a pure AI orchestrator, focused on numerology."
       (message "Worksheet generated. Opening for review.")
       (find-file worksheet-path))))
 
+;; --- Part D: The Project Manager (Daily-Schedule.org) ---
+
+(defun life-os-generate-daily-schedule ()
+  "Generate the Unified Tactical Schedule for today. (Handoff 10)"
+  (interactive)
+  (let* ((today-str (format-time-string "%Y-%%m-%d"))
+         ;; Path definitions
+         (schedule-path (expand-file-name "Daily-Schedule.org" lifeos-journal-root)) ; Central, single file
+         (worksheet-path (expand-file-name (format "%s-Worksheet.org" today-str) lifeos-worksheets-dir))
+         (fp-path (expand-file-name (format "%s-Full-Progress.org" today-str) lifeos-system-dir))
+         (dcc-path (expand-file-name (format "%s.org" today-str) lifeos-logs-dir))
+
+         ;; --- Input Data Validation ---
+         (unless (file-exists-p worksheet-path)
+           (user-error "Cannot generate schedule: Today's worksheet (%s) has not been completed." (file-name-nondirectory worksheet-path)))
+
+         ;; Gather all context
+         (worksheet-content (with-temp-buffer (insert-file-contents worksheet-path) (buffer-string)))
+         (fp-content (if (file-exists-p fp-path) (with-temp-buffer (insert-file-contents fp-path) (buffer-string)) "Full-Progress snapshot not found for today."))
+         (dcc-content (if (file-exists-p dcc-path) (with-temp-buffer (insert-file-contents dcc-path) (buffer-string)) "DCC not found for today."))
+         (strategies-content (concat (life-os--get-annual-codex-content (format-time-string "%Y")) "\n"
+                                       (life-os--get-monthly-directive-content (format-time-string "%Y") (format-time-string "%m")) "\n"
+                                       (life-os--get-cycle-outlook-content)))
+
+         ;; Prepare Prompt
+         (prompt (life-os-read-prompt (expand-file-name "7-Schedule-Gen.org.txt" lifeos-prompts-dir))) ; Using old filename temporarily
+         (final-prompt (-> prompt
+                           (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_COMPLETED_WORKSHEET]") worksheet-content)
+                           (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_FULL_PROGRESS_SNAPSHOT]") fp-content)
+                           (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_DCC]") dcc-content)
+                           (replace-regexp-in-string (regexp-quote "[CONTENTS_OF_ALL_ACTIVE_STRATEGIES]") strategies-content))))
+
+    (message "Generating Unified Tactical Schedule...")
+    (let ((response (life-os-extract-text-from-ai-response (life-os-call-ai final-prompt 'pro)))) ; Use a powerful model for this complex task
+      (if (or (not response) (string-empty-p response))
+          (user-error "AI failed to generate a schedule. Please check API response.")
+        (with-temp-buffer
+          (insert response)
+          (write-file schedule-path nil))
+        (message "Schedule generated. Opening the unified dashboard.")
+        (find-file schedule-path)))))
+
+
 (provide 'lifeos)
