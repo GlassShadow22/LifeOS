@@ -1406,4 +1406,106 @@ Intended to be called automatically or for historical data generation."
 ")))
           (save-buffer))))))
 
+;; Add to lifeos.el
+
+(defun life-os-refile-and-transition-state (&optional arg)
+  "Refile the current item and transition its TODO state based on user input.
+This function implements the core triage mechanism for the Two-Stage Lifecycle.
+It prompts the user for a refile location and a new TODO state, then applies them.
+If the new state is 'WAIT' or 'NEXT', or specific tags like :ConfirmMe: are added,
+it triggers downstream actions (e.g., creating child tasks, scheduling reminders).
+
+This function is a key part of the Triage-First Principle."
+  (interactive "P")
+  ;; Ensure we are in an Org buffer
+  (unless (derived-mode-p 'org-mode)
+    (user-error "This command must be run in an Org mode buffer"))
+
+  (let* ((element (org-element-at-point))
+         (title (org-element-property :title element))
+         (raw-title (or title (thing-at-point 'line)))
+         (item-name (if (stringp raw-title)
+                        (string-trim (substring-no-properties raw-title))
+                      (format "Item at %s" (point))))
+         (rfloc (org-refile-get-location (format "Refile '%s' to: " item-name))))
+    (unless rfloc
+      (user-error "Refile aborted by user"))
+
+    ;; Get current TODO state
+    (let ((current-state (org-get-todo-state)))
+      ;; Determine possible next states based on current state (basic logic)
+      ;; A more sophisticated state machine could be implemented here.
+      (let* ((all-states (apply 'append (mapcar 'cdr org-todo-keywords)))
+             (next-states (cl-remove-if (lambda (s) (string= s current-state)) all-states))
+             (chosen-state (completing-read (format "Transition '%s' from [%s] to: " item-name current-state)
+                                            (cons "No Change" next-states) nil t)))
+        (unless (string= chosen-state "No Change")
+          ;; Apply the new TODO state
+          (org-todo chosen-state))
+        )
+
+      ;; Perform the refile
+      (org-refile arg nil rfloc)
+
+      ;; Post-refile actions - Check for tags/properties that trigger workflows
+      ;; This is a simplified check. A more robust system might use advice or hooks.
+      (let ((tags (org-get-tags))
+            (properties (org-entry-properties)))
+        (cond
+         ;; Example: Trigger confirmation workflow
+         ((or (member "ConfirmMe" tags)
+              (assoc "Confirm_With" properties))
+          (life-os--create-confirmation-child-task))
+         ;; Example: Trigger scheduling workflow
+         ((member "ScheduleMe" tags)
+          (life-os--schedule-item))
+         ;; Add more triggers as needed
+         )
+        )
+      )
+    (message "Item '%s' refiled and state updated." item-name)
+    )
+  )
+
+;; --- Helper Functions for Triggers (Skeletons) ---
+
+;; This function would be fleshed out based on the operational manual's description (Section 2.x)
+(defun life-os--create-confirmation-child-task ()
+  "Create a child task for confirmation based on entry properties.
+This implements part of the Hierarchical Action Engine described in the Operational Manual."
+  (interactive)
+  (let ((confirm-with (org-entry-get nil "Confirm_With")))
+    (if confirm-with
+        (progn
+          ;; Create child headline
+          (org-insert-subheading nil)
+          (insert (format "Confirm with %s" confirm-with))
+          ;; Set TODO state, add properties, etc.
+          (org-todo "NEXT")
+          (org-set-property "TYPE" "Confirmation")
+          (org-set-property "PARENT_CONFIRM_WITH" confirm-with)
+          (message "Confirmation child task created for %s" confirm-with)
+          )
+      (message "No 'Confirm_With' property found for this entry.")
+      )
+    )
+  )
+
+;; Placeholder for scheduling logic
+(defun life-os--schedule-item ()
+  "Placeholder for scheduling logic triggered by :ScheduleMe: tag."
+  (interactive)
+  (message "Scheduling logic for :ScheduleMe: tag would be implemented here.")
+  ;; This could integrate with org-schedule, a custom calendar, or call an AI prompt
+  )
+
+;; Ensure the interactive command is available
+;; This part would typically go in lifeos-config.el, but defining it here for completeness in this step.
+;;;###autoload
+(defun life-os-refile-and-transition-state-wrapper ()
+  "Wrapper to call `life-os-refile-and-transition-state' interactively."
+  (interactive)
+  (life-os-refile-and-transition-state))
+
+
 (provide 'lifeos)
