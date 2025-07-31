@@ -1859,5 +1859,83 @@ This function is part of the Socratic Loop Engine (Priority 3)."
   (let ((date-str (read-string "Generate DCC for date (YYYY-MM-DD) [optional, defaults to today]: ")))
     (life-os-generate-daily-context-canvas (if (string-empty-p date-str) nil date-str))))
 
+;; --- Socratic Loop Engine: Daily Worksheet Generator ---
+
+(defun life-os--get-worksheet-output-path (target-date-str)
+  "Determine the canonical file path for today's Worksheet."
+  (expand-file-name (format "%s-Worksheet.org" target-date-str) life-os-system-dir))
+
+(defun life-os-generate-daily-worksheet (&optional target-date-str)
+  "Generate the Worksheet.org for TARGET-DATE-STR (defaults to today).
+This function is part of the Socratic Loop Engine (Priority 3).
+It consumes DCC, Full-Progress, and Session-Log data, then calls an AI prompt."
+  (interactive)
+  (let* ((target-time (if (and target-date-str (not (string-empty-p target-date-str)))
+                          (org-time-string-to-time target-date-str)
+                        (current-time)))
+         (target-date-str (format-time-string "%Y-%m-%d" target-time))
+         (worksheet-path (life-os--get-worksheet-output-path target-date-str))
+         (dcc-path (life-os--get-dcc-output-path target-date-str))
+         (fp-path (life-os--find-latest-full-progress)) ; Ideally for yesterday/target-date-str
+         (session-log-path (expand-file-name (format "%s-Session-Log.org" target-date-str) life-os-logs-dir))
+         (prompt-path (expand-file-name "Handoff-9-Worksheet-Gen.org" lifeos-prompts-dir)) ; Use lifeos-prompts-dir
+
+         ;; Gather Inputs
+         (dcc-content (if (file-exists-p dcc-path)
+                          (with-temp-buffer (insert-file-contents dcc-path) (buffer-string))
+                        "DCC data not found."))
+         (fp-content (if (and fp-path (file-exists-p fp-path))
+                         (with-temp-buffer (insert-file-contents fp-path) (buffer-string))
+                       "Full-Progress data not found."))
+         (session-log-content (if (file-exists-p session-log-path)
+                                  (with-temp-buffer (insert-file-contents session-log-path) (buffer-string))
+                                "Session-Log data not found."))
+         (waking-thoughts-content (life-os--extract-waking-thoughts session-log-content)) ; Helper function needed
+
+         ;; Read and process prompt
+         (prompt-template (if (file-exists-p prompt-path)
+                              (with-temp-buffer (insert-file-contents prompt-path) (buffer-string))
+                            "# ERROR: Prompt file Handoff-9-Worksheet-Gen.org not found."))
+         (final-prompt (-> prompt-template
+                           (replace-regexp-in-string (regexp-quote "[FULL_PROGRESS_PLACEHOLDER]") fp-content)
+                           (replace-regexp-in-string (regexp-quote "[DCC_PLACEHOLDER]") dcc-content)
+                           (replace-regexp-in-string (regexp-quote "[WAKING_THOUGHTS_PLACEHOLDER]") waking-thoughts-content)))
+         )
+
+    ;; Call AI (Placeholder for actual AI integration logic)
+    ;; This assumes `life-os-call-ai` and `life-os-extract-text-from-ai-response` exist.
+    (let* ((raw-ai-response (life-os-call-ai final-prompt 'pro)) ; Assuming 'pro model
+           (ai-worksheet-content (life-os-extract-text-from-ai-response raw-ai-response)))
+      (unless ai-worksheet-content
+        (setq ai-worksheet-content "# ERROR: AI failed to generate worksheet content."))
+
+      ;; Save the result
+      (with-temp-file worksheet-path
+        (insert (format "#+TITLE: Daily Worksheet for %s\n" target-date-str))
+        (insert (format "#+DATE: %s\n\n" (format-time-string "[%Y-%m-%d %a %H:%M]")))
+        (insert ai-worksheet-content)
+        (goto-char (point-min)) ; Move to top for viewing
+        )
+      (message "Worksheet generated at: %s" worksheet-path)
+      ;; Optional: Open the file
+      ;; (find-file worksheet-path)
+      t))) ; Return t on success
+
+;; --- Helper function for Worksheet Generator ---
+(defun life-os--extract-waking-thoughts (session-log-content)
+  "Extract the 'Waking Thoughts' section from Session-Log content."
+  (let ((waking-thoughts ""))
+    (with-temp-buffer
+      (insert session-log-content)
+      (goto-char (point-min))
+      (when (re-search-forward "^\\*\\* Waking Thoughts" nil t)
+        (let ((start (point)))
+          ;; Find the end (next ** heading or end of buffer)
+          (if (re-search-forward "^\\*\\* " nil t)
+              (setq waking-thoughts (buffer-substring-no-properties start (match-beginning 0)))
+            (setq waking-thoughts (buffer-substring-no-properties start (point-max))))))
+      )
+    (if (string-empty-p waking-thoughts) "No waking thoughts recorded." waking-thoughts)))
+
 
 (provide 'lifeos)
